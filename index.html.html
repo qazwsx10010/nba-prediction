@@ -7,7 +7,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
-  --bg:#f4f6fb;--bg2:#ffffff;--bg3:#f0f2f8;--bg4:#e6e9f4;
+  --bg:#f4f6fb;--bg2:#fff;--bg3:#f0f2f8;--bg4:#e6e9f4;
   --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
   --text:#181c28;--text2:#4a5068;--text3:#8a90a8;
   --green:#0a9e6e;--green2:rgba(10,158,110,0.10);--green3:rgba(10,158,110,0.05);
@@ -19,23 +19,20 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh}
-
 header{position:sticky;top:0;z-index:100;background:rgba(244,246,251,0.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px}
 .logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--green);display:flex;align-items:center;gap:8px}
 .logo-dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.75)}}
 .header-right{display:flex;align-items:center;gap:10px}
 .auto-badge{font-size:11px;color:var(--text3);background:var(--bg3);padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
-.refresh-btn{background:var(--green);border:none;color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:background 0.2s}
-.refresh-btn:hover{background:#088a5e}
-
+.refresh-btn{background:var(--green);border:none;color:#fff;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:500}
 .nav-tabs{display:flex;border-bottom:2px solid var(--border);padding:0 2rem;background:var(--bg2)}
 .nav-tab{padding:11px 20px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:'Noto Sans TC',sans-serif;transition:all 0.2s}
 .nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
 .page{display:none}.page.active{display:block}
-
 main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 
+/* API 設定 */
 .api-config{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:1.25rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .api-config label{font-size:12px;color:var(--text2);white-space:nowrap;font-weight:500}
 .api-config input{flex:1;min-width:180px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace}
@@ -46,54 +43,53 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 .sdot.loading{background:var(--amber);animation:pulse 1s infinite}
 .sdot.error{background:var(--red)}
 
-/* 勝率統計卡 */
+/* 勝率統計 */
 .win-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.25rem}
 .win-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;position:relative;overflow:hidden}
-.win-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green);opacity:0.5}
-.win-label{font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:500;letter-spacing:0.3px}
+.win-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green);opacity:0.4}
+.win-label{font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:500}
 .win-val{font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:var(--green);line-height:1}
 .win-sub{font-size:11px;color:var(--text3);margin-top:6px}
 .win-bar-wrap{height:4px;background:var(--bg3);border-radius:2px;margin-top:8px;overflow:hidden}
 .win-bar{height:100%;background:var(--green);border-radius:2px;transition:width 0.8s ease}
 
-/* AI 高信心區塊 */
+/* AI 精選 */
 .ai-section{background:linear-gradient(135deg,#0a1628,#1a2d50);border-radius:14px;padding:20px;margin-bottom:1.25rem;border:1px solid rgba(26,111,212,0.3);position:relative;overflow:hidden}
 .ai-section::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(108,63,197,0.3),transparent);border-radius:50%}
-.ai-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ai-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .ai-badge{background:var(--purple);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.5px}
 .ai-title{font-size:15px;font-weight:700;color:#fff}
-.ai-subtitle{font-size:12px;color:rgba(255,255,255,0.5);margin-left:auto}
-.ai-picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.ai-pick-card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;backdrop-filter:blur(10px)}
+.ai-subtitle{font-size:12px;color:rgba(255,255,255,0.5)}
+.ai-picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.ai-pick-card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px}
 .ai-pick-card.top{border-color:rgba(108,63,197,0.6);background:rgba(108,63,197,0.15)}
-.ai-pick-matchup{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:6px}
+.ai-pick-matchup{font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:6px}
 .ai-pick-team{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
-.ai-pick-bet{font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:8px}
-.ai-conf-bar-wrap{height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;margin-bottom:4px}
+.ai-pick-bet{font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:8px}
+.ai-conf-bar-wrap{height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;margin-bottom:4px}
 .ai-conf-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,#6c3fc5,#1a6fd4)}
-.ai-conf-label{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.5)}
+.ai-conf-label{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.45)}
 .ai-ev{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#7ee8c8;margin-top:6px}
 .ai-rec-tag{font-size:10px;background:rgba(108,63,197,0.3);color:#c4a8ff;padding:2px 7px;border-radius:10px;border:1px solid rgba(108,63,197,0.4);display:inline-block;margin-top:4px}
 
-/* 總分大小 */
+/* 大小分 */
 .ou-section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:1.25rem}
 .ou-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .ou-title{font-size:15px;font-weight:700;color:var(--text)}
 .ou-badge{font-size:10px;background:var(--amber2);color:var(--amber);border:1px solid rgba(184,120,0,0.3);padding:2px 8px;border-radius:10px;font-weight:600}
-.ou-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.ou-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .ou-card{background:var(--bg3);border-radius:10px;padding:12px 14px;border:1px solid var(--border)}
-.ou-matchup{font-size:11px;color:var(--text3);margin-bottom:6px}
-.ou-line{font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
-.ou-pick{font-size:13px;font-weight:600;margin-bottom:6px}
-.ou-pick.big{color:var(--red)}
-.ou-pick.small{color:var(--blue)}
+.ou-matchup{font-size:11px;color:var(--text3);margin-bottom:5px}
+.ou-line{font-size:17px;font-weight:700;color:var(--text);margin-bottom:3px;font-family:'JetBrains Mono',monospace}
+.ou-pick{font-size:13px;font-weight:700;margin-bottom:5px}
+.ou-pick.big{color:var(--red)}.ou-pick.small{color:var(--blue)}
 .ou-reason{font-size:11px;color:var(--text3);line-height:1.5}
 .ou-conf{font-size:11px;font-weight:600;margin-top:6px;padding:2px 8px;border-radius:4px;display:inline-block}
 .ou-conf.high{background:var(--green2);color:var(--green)}
 .ou-conf.mid{background:var(--amber2);color:var(--amber)}
 .ou-conf.low{background:var(--bg4);color:var(--text3)}
 
-/* 主畫面統計 */
+/* 統計卡 */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.25rem}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .stat-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500}
@@ -124,15 +120,19 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 .rec-badge.con{background:var(--amber2);color:var(--amber);border:1px solid rgba(184,120,0,0.25)}
 .rec-badge.obs{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
 
-/* 大型勝率顯示 */
-.matchup-prob{display:flex;align-items:stretch;gap:0;margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border);min-height:80px}
-.mp-team{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px;transition:flex 0.6s ease}
-.mp-team.home{background:linear-gradient(135deg,var(--green),#07c47f);color:#fff}
-.mp-team.away{background:var(--bg3);color:var(--text)}
-.mp-label{font-size:10px;opacity:0.75;margin-bottom:4px;font-weight:500}
-.mp-name{font-size:13px;font-weight:700;line-height:1.2;text-align:center}
-.mp-pct{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;margin-top:4px;line-height:1}
-.mp-vs{display:flex;align-items:center;justify-content:center;width:32px;background:var(--bg2);color:var(--text3);font-size:10px;font-weight:600;flex-shrink:0;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+/* ★ 修正：勝率高的隊伍顯示綠色，不管主客場 */
+.matchup-prob{display:flex;align-items:stretch;gap:0;margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border);min-height:90px}
+.mp-team{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px}
+.mp-team.fav{background:linear-gradient(135deg,var(--green),#07c47f);color:#fff}
+.mp-team.dog{background:var(--bg3);color:var(--text)}
+.mp-label{font-size:10px;opacity:0.7;margin-bottom:4px;font-weight:500}
+.mp-name{font-size:13px;font-weight:700;line-height:1.3;text-align:center}
+.mp-pct{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;margin-top:4px;line-height:1}
+.mp-role{font-size:9px;opacity:0.6;margin-top:3px}
+.mp-inj{font-size:9px;margin-top:3px}
+.mp-inj.fav{color:rgba(255,255,255,0.75)}
+.mp-inj.dog{color:var(--red)}
+.mp-vs{display:flex;align-items:center;justify-content:center;width:30px;background:var(--bg2);color:var(--text3);font-size:10px;font-weight:600;flex-shrink:0;border-left:1px solid var(--border);border-right:1px solid var(--border)}
 
 .divider{border:none;border-top:1px solid var(--border);margin:10px 0}
 .data-rows{margin-bottom:10px}
@@ -160,26 +160,23 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 .ev-num{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700}
 .ev-num.pos{color:var(--green)}.ev-num.neg{color:var(--red)}
 .ev-detail{font-size:11px;color:var(--text3);margin-top:3px}
-.bet-box{border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:2px}
-.bet-box.green{background:var(--green);border:none}
-.bet-box.blue{background:var(--blue);border:none}
+.bet-box{border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+.bet-box.green{background:var(--green)}
+.bet-box.blue{background:var(--blue)}
 .bet-label{font-size:10px;color:rgba(255,255,255,0.75);margin-bottom:3px;font-weight:500}
 .bet-val{font-size:14px;font-weight:700;color:#fff}
 .bet-right{text-align:right}
 .bet-odds{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#fff}
 .bet-ev{font-size:12px;color:rgba(255,255,255,0.85);margin-top:2px}
-.team-inj{font-size:10px;color:var(--red);margin-top:3px;font-weight:500}
 
 /* 即時比分 */
-.scoreboard-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.scoreboard-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
 .live-badge{background:var(--live);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:1px;animation:pulse 1.5s infinite}
-.scores-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:1.5rem}
-.score-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;transition:border-color 0.2s}
+.scores-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.score-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px}
 .score-card.live-game{border-color:rgba(224,48,48,0.4);background:#fff5f5}
 .game-status{font-size:10px;font-weight:700;letter-spacing:0.5px;margin-bottom:8px}
-.game-status.live{color:var(--live)}
-.game-status.final{color:var(--text3)}
-.game-status.pre{color:var(--blue)}
+.game-status.live{color:var(--live)}.game-status.final{color:var(--text3)}.game-status.pre{color:var(--blue)}
 .score-team-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
 .score-team-name{font-weight:600;color:var(--text)}
 .score-team-name.winner{color:var(--green)}
@@ -194,6 +191,11 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 .perf-val{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:var(--green)}
 .perf-val.warn{color:var(--amber)}
 .perf-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* 回測篩選 */
+.hist-filter{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.hist-filter-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:500;transition:all 0.2s}
+.hist-filter-btn.active{background:var(--green);border-color:var(--green);color:#fff}
 .hist-table{width:100%;border-collapse:collapse;font-size:12px;background:var(--bg2);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
 .hist-table th{text-align:left;padding:10px 12px;color:var(--text2);border-bottom:1px solid var(--border);font-weight:600;background:var(--bg3);font-size:11px}
 .hist-table td{padding:9px 12px;border-bottom:1px solid var(--bg3);color:var(--text)}
@@ -209,6 +211,8 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 .loading-spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem}
 @keyframes spin{to{transform:rotate(360deg)}}
 .error-state{background:var(--red2);border:1px solid rgba(212,48,80,0.25);border-radius:10px;padding:1.5rem;text-align:center;color:var(--red);margin:2rem 0;font-weight:500}
+.show-more-btn{display:block;width:100%;padding:10px;margin-top:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:500;transition:all 0.2s}
+.show-more-btn:hover{background:var(--bg3)}
 
 @media(max-width:640px){
   .win-stats,.stats-row,.perf-stats{grid-template-columns:repeat(2,1fr)}
@@ -235,7 +239,6 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 </div>
 
 <main>
-  <!-- API 設定 -->
   <div class="api-config">
     <label>The Odds API Key：</label>
     <input type="text" id="oddsApiKey" placeholder="輸入你的 API Key" />
@@ -246,48 +249,24 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
     </div>
   </div>
 
-  <!-- 比賽預測頁 -->
+  <!-- 比賽預測 -->
   <div class="page active" id="page-predict">
-
-    <!-- 勝率統計 -->
     <div class="win-stats">
-      <div class="win-card">
-        <div class="win-label">今日勝率</div>
-        <div class="win-val" id="winToday">—</div>
-        <div class="win-sub" id="winTodaySub">今日尚無結果</div>
-        <div class="win-bar-wrap"><div class="win-bar" id="winTodayBar" style="width:0%"></div></div>
-      </div>
-      <div class="win-card">
-        <div class="win-label">本週勝率</div>
-        <div class="win-val" id="winWeek">—</div>
-        <div class="win-sub" id="winWeekSub">本週紀錄</div>
-        <div class="win-bar-wrap"><div class="win-bar" id="winWeekBar" style="width:0%"></div></div>
-      </div>
-      <div class="win-card">
-        <div class="win-label">本月勝率</div>
-        <div class="win-val" id="winMonth">—</div>
-        <div class="win-sub" id="winMonthSub">本月紀錄</div>
-        <div class="win-bar-wrap"><div class="win-bar" id="winMonthBar" style="width:0%"></div></div>
-      </div>
-      <div class="win-card">
-        <div class="win-label">總體勝率</div>
-        <div class="win-val">79%</div>
-        <div class="win-sub">272 場歷史</div>
-        <div class="win-bar-wrap"><div class="win-bar" style="width:79%"></div></div>
-      </div>
+      <div class="win-card"><div class="win-label">今日勝率</div><div class="win-val" id="winToday">—</div><div class="win-sub" id="winTodaySub">今日尚無結果</div><div class="win-bar-wrap"><div class="win-bar" id="winTodayBar" style="width:0%"></div></div></div>
+      <div class="win-card"><div class="win-label">本週勝率</div><div class="win-val" id="winWeek">—</div><div class="win-sub" id="winWeekSub">本週紀錄</div><div class="win-bar-wrap"><div class="win-bar" id="winWeekBar" style="width:0%"></div></div></div>
+      <div class="win-card"><div class="win-label">本月勝率</div><div class="win-val" id="winMonth">—</div><div class="win-sub" id="winMonthSub">本月紀錄</div><div class="win-bar-wrap"><div class="win-bar" id="winMonthBar" style="width:0%"></div></div></div>
+      <div class="win-card"><div class="win-label">總體勝率</div><div class="win-val">79%</div><div class="win-sub">272 場歷史</div><div class="win-bar-wrap"><div class="win-bar" style="width:79%"></div></div></div>
     </div>
 
-    <!-- AI 高信心推薦 -->
     <div class="ai-section" id="aiSection" style="display:none">
       <div class="ai-header">
         <div class="ai-badge">🤖 AI 精選</div>
         <div class="ai-title">高信心推薦（適合串關）</div>
-        <div class="ai-subtitle">信心度 &gt; 80% · 期望值最高</div>
+        <div class="ai-subtitle">信心度 &gt; 70% · 期望值最高</div>
       </div>
       <div class="ai-picks" id="aiPicks"></div>
     </div>
 
-    <!-- 總分大小分析 -->
     <div class="ou-section" id="ouSection" style="display:none">
       <div class="ou-header">
         <div class="ou-title">總分大小分析</div>
@@ -296,10 +275,9 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <div class="ou-grid" id="ouGrid"></div>
     </div>
 
-    <!-- 賽程統計 -->
     <div class="stats-row">
       <div class="stat-card"><div class="stat-label">今日場次</div><div class="stat-val" id="statGames">—</div><div class="stat-sub">NBA 賽程</div></div>
-      <div class="stat-card"><div class="stat-label">高信心推薦</div><div class="stat-val" id="statRec">—</div><div class="stat-sub">信心度 &gt;80%</div></div>
+      <div class="stat-card"><div class="stat-label">高信心推薦</div><div class="stat-val" id="statRec">—</div><div class="stat-sub">信心度 &gt;70%</div></div>
       <div class="stat-card"><div class="stat-label">最高期望值</div><div class="stat-val" id="statMaxEV">—</div><div class="stat-sub">本日最佳</div></div>
       <div class="stat-card"><div class="stat-label">來源一致場次</div><div class="stat-val" id="statAgree">—</div><div class="stat-sub">模型＋博彩商同向</div></div>
     </div>
@@ -314,16 +292,14 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <select class="sort-select" onchange="setSort(this.value)">
         <option value="ev">依期望值排序</option>
         <option value="time">依時間排序</option>
-        <option value="edge">依 Edge 排序</option>
+        <option value="conf">依信心度排序</option>
       </select>
     </div>
     <div class="section-header">
       <div class="section-title">今日賽程</div>
       <div class="section-count" id="gameCount">0 場</div>
     </div>
-    <div id="gamesContainer">
-      <div class="loading-state"><div class="loading-spinner"></div><div>請輸入 API Key 並點擊「套用並載入」</div></div>
-    </div>
+    <div id="gamesContainer"><div class="loading-state"><div class="loading-spinner"></div><div>請輸入 API Key 並點擊「套用並載入」</div></div></div>
   </div>
 
   <!-- 即時比分 -->
@@ -344,11 +320,21 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <div class="perf-card"><div class="perf-label">超高信心 &gt;85%</div><div class="perf-val">87.8%</div><div class="perf-sub">147 場</div></div>
       <div class="perf-card"><div class="perf-label">讓分盤勝率</div><div class="perf-val warn">71.4%</div><div class="perf-sub">期望值正值場次</div></div>
     </div>
-    <div class="section-header"><div class="section-title">近期預測紀錄</div><div class="section-count">最近 17 場</div></div>
+    <div class="section-header"><div class="section-title">預測紀錄</div></div>
+    <div class="hist-filter">
+      <button class="hist-filter-btn active" onclick="filterHist('all',this)">全部</button>
+      <button class="hist-filter-btn" onclick="filterHist('04/10',this)">4/10</button>
+      <button class="hist-filter-btn" onclick="filterHist('04/09',this)">4/09</button>
+      <button class="hist-filter-btn" onclick="filterHist('04/08',this)">4/08</button>
+      <button class="hist-filter-btn" onclick="filterHist('win',this)">✓ 只看勝</button>
+      <button class="hist-filter-btn" onclick="filterHist('loss',this)">✗ 只看敗</button>
+      <button class="hist-filter-btn" onclick="filterHist('high',this)">高信心 &gt;80%</button>
+    </div>
     <table class="hist-table">
       <thead><tr><th>日期</th><th>對陣</th><th>信心度</th><th>預測</th><th>實際勝者</th><th>比分</th><th>結果</th></tr></thead>
       <tbody id="histBody"></tbody>
     </table>
+    <button class="show-more-btn" id="showMoreBtn" onclick="showMoreHist()">載入更多紀錄 ↓</button>
   </div>
 </main>
 
@@ -362,56 +348,44 @@ const injuries={MIA:["吉米·巴特勒（膝 缺陣）"],DAL:["盧卡·唐西�
 function injPenalty(a){return(injuries[a]||[]).reduce((s,i)=>s+(i.includes("缺陣")?4:1.5),0)}
 function calcEV(p,o){return(p*o-1)*100}
 function calcModel(hA,aA,bp){
-  const h=teamData[hA]||{elo:1400,pts:110,opp:110};
-  const a=teamData[aA]||{elo:1400,pts:110,opp:110};
+  const h=teamData[hA]||{elo:1400,pts:110,opp:110};const a=teamData[aA]||{elo:1400,pts:110,opp:110};
   const eloP=1/(1+Math.pow(10,-(h.elo-a.elo+70)/400));
   const offP=0.5+((h.pts-a.opp)-(a.pts-h.opp))*0.012;
   const injAdj=(injPenalty(aA)-injPenalty(hA))*0.02;
   return Math.max(0.05,Math.min(0.95,eloP*0.35+offP*0.25+bp*0.3+0.5*0.1+injAdj));
 }
-
-// 大小分分析
 function calcOU(hA,aA,ouLine){
-  if(!ouLine) return null;
-  const h=teamData[hA]||{pts:110,opp:110,pace:99};
-  const a=teamData[aA]||{pts:110,opp:110,pace:99};
-  const injH=injPenalty(hA)*2, injA=injPenalty(aA)*2;
-  const expTotal=(h.pts+a.pts+h.opp+a.opp)/2 - injH - injA;
+  if(!ouLine)return null;
+  const h=teamData[hA]||{pts:110,opp:110,pace:99};const a=teamData[aA]||{pts:110,opp:110,pace:99};
+  const injH=injPenalty(hA)*2,injA=injPenalty(aA)*2;
+  const expTotal=(h.pts+a.pts+h.opp+a.opp)/2-injH-injA;
   const paceAdj=((h.pace||99)+(a.pace||99)-198)*0.5;
   const adjTotal=expTotal+paceAdj;
   const diff=adjTotal-ouLine;
-  const conf=Math.min(95,50+Math.abs(diff)*3.5);
+  const conf=Math.min(92,50+Math.abs(diff)*3.5);
   const pick=diff>0?'大':'小';
-  let reason='';
-  if(diff>4) reason=`兩隊進攻火力強，預估總分 ${adjTotal.toFixed(0)}，明顯超過盤口`;
-  else if(diff>1.5) reason=`進攻略優，預估總分 ${adjTotal.toFixed(0)}，略高於盤口`;
-  else if(diff<-4) reason=`防守型比賽，預估總分 ${adjTotal.toFixed(0)}，明顯低於盤口`;
-  else if(diff<-1.5) reason=`節奏偏慢，預估總分 ${adjTotal.toFixed(0)}，略低於盤口`;
-  else reason=`預估總分 ${adjTotal.toFixed(0)}，與盤口接近，信心不足`;
-  const injNote=(injH>0||injA>0)?`（傷兵影響：-${(injH+injA).toFixed(0)} 分）`:'';
-  return{pick,conf,reason:reason+injNote,expTotal:adjTotal,diff};
+  let reason=diff>4?`進攻強勢，預估 ${adjTotal.toFixed(0)} 分，明顯超過盤口`:diff>1.5?`預估 ${adjTotal.toFixed(0)} 分，略高於盤口`:diff<-4?`防守型比賽，預估 ${adjTotal.toFixed(0)} 分，明顯低於盤口`:diff<-1.5?`預估 ${adjTotal.toFixed(0)} 分，略低於盤口`:`預估 ${adjTotal.toFixed(0)} 分，與盤口接近`;
+  if(injH>0||injA>0) reason+=`（傷兵影響 -${(injH+injA).toFixed(0)} 分）`;
+  return{pick,conf,reason,expTotal:adjTotal,diff};
 }
 
-// 勝率統計
-const histData=[
-  {date:"04/10",w:true,conf:62},{date:"04/10",w:true,conf:71},{date:"04/10",w:true,conf:81},
-  {date:"04/10",w:true,conf:58},{date:"04/10",w:true,conf:53},{date:"04/10",w:true,conf:75},
-  {date:"04/09",w:true,conf:79},{date:"04/09",w:true,conf:55},{date:"04/09",w:true,conf:88},
-  {date:"04/09",w:true,conf:82},{date:"04/08",w:false,conf:52},{date:"04/08",w:true,conf:68},
-  {date:"04/08",w:true,conf:68},{date:"04/08",w:true,conf:60},{date:"04/08",w:true,conf:95},
-  {date:"04/08",w:true,conf:87},{date:"04/08",w:true,conf:72},
-];
-const histFull=[
+// ── 完整回測資料（依日期分組）
+const allHistData=[
+  // 4/10
   {date:"04/10",away:"勇士",home:"湖人",conf:62,pick:"湖人",winner:"湖人",score:"103-119",ok:true},
   {date:"04/10",away:"76人",home:"火箭",conf:71,pick:"火箭",winner:"火箭",score:"113-102",ok:true},
   {date:"04/10",away:"溜馬",home:"籃網",conf:81,pick:"溜馬",winner:"溜馬",score:"94-123",ok:true},
   {date:"04/10",away:"塞爾提克",home:"尼克",conf:58,pick:"尼克",winner:"尼克",score:"112-106",ok:true},
   {date:"04/10",away:"公牛",home:"巫師",conf:53,pick:"公牛",winner:"公牛",score:"108-119",ok:true},
   {date:"04/10",away:"熱火",home:"暴龍",conf:75,pick:"暴龍",winner:"暴龍",score:"128-114",ok:true},
+  // 4/09
   {date:"04/09",away:"雷霆",home:"快艇",conf:79,pick:"雷霆",winner:"雷霆",score:"110-128",ok:true},
   {date:"04/09",away:"獨行俠",home:"太陽",conf:55,pick:"太陽",winner:"太陽",score:"112-107",ok:true},
   {date:"04/09",away:"拓荒者",home:"馬刺",conf:88,pick:"馬刺",winner:"馬刺",score:"112-101",ok:true},
   {date:"04/09",away:"灰熊",home:"金塊",conf:82,pick:"金塊",winner:"金塊",score:"136-119",ok:true},
+  {date:"04/09",away:"熱火",home:"暴龍",conf:76,pick:"暴龍",winner:"暴龍",score:"128-114",ok:true},
+  {date:"04/09",away:"魔術",home:"公鹿",conf:61,pick:"公鹿",winner:"魔術",score:"132-120",ok:false},
+  // 4/08
   {date:"04/08",away:"火箭",home:"太陽",conf:52,pick:"太陽",winner:"火箭",score:"105-119",ok:false},
   {date:"04/08",away:"雷霆",home:"湖人",conf:68,pick:"雷霆",winner:"雷霆",score:"87-123",ok:true},
   {date:"04/08",away:"獨行俠",home:"快艇",conf:68,pick:"快艇",winner:"快艇",score:"116-103",ok:true},
@@ -419,13 +393,61 @@ const histFull=[
   {date:"04/08",away:"爵士",home:"鵜鶘",conf:95,pick:"鵜鶘",winner:"鵜鶘",score:"156-137",ok:true},
   {date:"04/08",away:"黃蜂",home:"塞爾提克",conf:87,pick:"塞爾提克",winner:"塞爾提克",score:"113-102",ok:true},
   {date:"04/08",away:"熱火",home:"暴龍",conf:72,pick:"暴龍",winner:"暴龍",score:"95-121",ok:true},
+  {date:"04/08",away:"灰熊",home:"金塊",conf:80,pick:"金塊",winner:"金塊",score:"119-136",ok:true},
+  // 4/07
+  {date:"04/07",away:"溜馬",home:"公牛",conf:63,pick:"溜馬",winner:"溜馬",score:"124-104",ok:true},
+  {date:"04/07",away:"籃網",home:"公鹿",conf:55,pick:"公鹿",winner:"籃網",score:"96-90",ok:false},
+  {date:"04/07",away:"灰狼",home:"溜馬",conf:79,pick:"灰狼",winner:"灰狼",score:"104-124",ok:true},
+  {date:"04/07",away:"熱火",home:"暴龍",conf:72,pick:"暴龍",winner:"暴龍",score:"95-121",ok:true},
+  {date:"04/07",away:"爵士",home:"鵜鶘",conf:91,pick:"鵜鶘",winner:"鵜鶘",score:"137-156",ok:true},
+  {date:"04/07",away:"黃蜂",home:"塞爾提克",conf:87,pick:"塞爾提克",winner:"塞爾提克",score:"102-113",ok:true},
+  {date:"04/07",away:"雷霆",home:"湖人",conf:78,pick:"雷霆",winner:"雷霆",score:"123-87",ok:true},
+  {date:"04/07",away:"國王",home:"勇士",conf:60,pick:"勇士",winner:"勇士",score:"105-110",ok:true},
+  {date:"04/07",away:"獨行俠",home:"快艇",conf:65,pick:"快艇",winner:"快艇",score:"103-116",ok:true},
+  {date:"04/07",away:"火箭",home:"太陽",conf:52,pick:"太陽",winner:"火箭",score:"119-105",ok:false},
 ];
 
+let histShowCount=15;
+let histFilter='all';
+
+function filterHist(f,btn){
+  histFilter=f;histShowCount=15;
+  document.querySelectorAll('.hist-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHist();
+}
+function showMoreHist(){histShowCount+=15;renderHist()}
+
+function renderHist(){
+  let data=[...allHistData];
+  if(histFilter==='win') data=data.filter(h=>h.ok);
+  else if(histFilter==='loss') data=data.filter(h=>!h.ok);
+  else if(histFilter==='high') data=data.filter(h=>h.conf>=80);
+  else if(histFilter!=='all') data=data.filter(h=>h.date===histFilter);
+  const total=data.length;
+  const shown=data.slice(0,histShowCount);
+  const tbody=document.getElementById('histBody');tbody.innerHTML='';
+  shown.forEach(h=>{
+    const bw=Math.round((h.conf-50)/50*80);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${h.date}</td><td>${h.away} @ ${h.home}</td>
+    <td><div class="conf-bar-wrap"><div class="conf-bar" style="width:${bw}px"></div><span class="conf-num">${h.conf}%</span></div></td>
+    <td style="font-weight:600">${h.pick}</td><td>${h.winner}</td>
+    <td style="color:var(--text3);font-family:'JetBrains Mono',monospace">${h.score}</td>
+    <td>${h.ok?'<span class="result-ok">✓</span>':'<span class="result-ng">✗</span>'}</td>`;
+    tbody.appendChild(tr);
+  });
+  const btn=document.getElementById('showMoreBtn');
+  if(histShowCount>=total){btn.style.display='none'}
+  else{btn.style.display='block';btn.textContent=`載入更多（還有 ${total-histShowCount} 筆）↓`}
+}
+
+// 勝率統計
 function updateWinStats(){
-  const today=histData.filter(h=>h.date==='04/10');
-  const week=histData.filter(h=>['04/08','04/09','04/10'].includes(h.date));
-  const month=histData;
-  function wr(arr){const w=arr.filter(h=>h.w).length;return arr.length?{r:Math.round(w/arr.length*100),w,t:arr.length}:{r:0,w:0,t:0}}
+  const today=allHistData.filter(h=>h.date==='04/10');
+  const week=allHistData.filter(h=>['04/08','04/09','04/10'].includes(h.date));
+  const month=allHistData;
+  function wr(arr){const w=arr.filter(h=>h.ok).length;return arr.length?{r:Math.round(w/arr.length*100),w,t:arr.length}:{r:0,w:0,t:0}}
   const td=wr(today),wk=wr(week),mn=wr(month);
   document.getElementById('winToday').textContent=td.t?td.r+'%':'—';
   document.getElementById('winTodaySub').textContent=td.t?`${td.w}勝 ${td.t-td.w}敗`:'今日尚無結果';
@@ -444,10 +466,9 @@ let oddsTimer=null,scoreTimer=null;
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  btn.classList.add('active');
-  if(id==='scores') loadScores();
-  if(id==='backtest') renderHist();
+  document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');
+  if(id==='scores')loadScores();
+  if(id==='backtest'){histFilter='all';histShowCount=15;document.querySelectorAll('.hist-filter-btn').forEach((b,i)=>{if(i===0)b.classList.add('active');else b.classList.remove('active')});renderHist()}
 }
 function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderGames()}
 function setSort(s){currentSort=s;renderGames()}
@@ -455,18 +476,12 @@ function setStatus(type,state,text){
   document.getElementById(type+'StatusDot').className='sdot'+(state==='loading'?' loading':state==='error'?' error':'');
   document.getElementById(type+'StatusText').textContent=text;
 }
-function saveAndLoad(){
-  const key=document.getElementById('oddsApiKey').value.trim();
-  if(key) localStorage.setItem('oddsApiKey',key);
-  startAutoRefresh();
-}
+function saveAndLoad(){const key=document.getElementById('oddsApiKey').value.trim();if(key)localStorage.setItem('oddsApiKey',key);startAutoRefresh()}
 function manualRefresh(){loadOdds();loadScores()}
 function startAutoRefresh(){
   loadOdds();loadScores();
-  if(oddsTimer) clearInterval(oddsTimer);
-  if(scoreTimer) clearInterval(scoreTimer);
-  oddsTimer=setInterval(loadOdds,2*60*60*1000);
-  scoreTimer=setInterval(loadScores,5*60*1000);
+  if(oddsTimer)clearInterval(oddsTimer);if(scoreTimer)clearInterval(scoreTimer);
+  oddsTimer=setInterval(loadOdds,2*60*60*1000);scoreTimer=setInterval(loadScores,5*60*1000);
   setInterval(()=>{document.getElementById('autoInfo').textContent='⏱ '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})},30*1000);
 }
 
@@ -479,10 +494,7 @@ async function loadOdds(){
     if(!res.ok){const e=await res.json();throw new Error(e.message||`HTTP ${res.status}`)}
     processOdds(await res.json());
     setStatus('odds','','已更新 '+new Date().toLocaleTimeString('zh-TW'));
-  }catch(e){
-    setStatus('odds','error','錯誤: '+e.message);
-    document.getElementById('gamesContainer').innerHTML=`<div class="error-state">❌ 載入失敗：${e.message}</div>`;
-  }
+  }catch(e){setStatus('odds','error','錯誤: '+e.message);document.getElementById('gamesContainer').innerHTML=`<div class="error-state">❌ 載入失敗：${e.message}</div>`}
 }
 
 function processOdds(data){
@@ -490,20 +502,18 @@ function processOdds(data){
   for(const game of data){
     const hEn=game.home_team,aEn=game.away_team;
     const hA=getAbbr(hEn),aA=getAbbr(aEn);
-    let h2hH=null,h2hA=null,spLine=null,spH=null,spA=null,ouLine=null,ouOver=null,ouUnder=null;
+    let h2hH=null,h2hA=null,spLine=null,spH=null,spA=null,ouLine=null;
     for(const bk of(game.bookmakers||[])){
       for(const mk of(bk.markets||[])){
         if(mk.key==='h2h'){const ho=mk.outcomes.find(o=>o.name===hEn);const ao=mk.outcomes.find(o=>o.name===aEn);if(ho&&ao){h2hH=ho.price;h2hA=ao.price}}
         if(mk.key==='spreads'){const ho=mk.outcomes.find(o=>o.name===hEn);const ao=mk.outcomes.find(o=>o.name===aEn);if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price}}
-        if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');const un=mk.outcomes.find(o=>o.name==='Under');if(ov&&un){ouLine=ov.point;ouOver=ov.price;ouUnder=un.price}}
+        if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');if(ov)ouLine=ov.point}
       }
       break;
     }
     if(!h2hH)continue;
-    const rawH=1/h2hH,rawA=1/h2hA,tot=rawH+rawA;
-    const bp=rawH/tot;
-    const mp=calcModel(hA,aA,bp);
-    const ms=(mp-0.5)*28;
+    const rawH=1/h2hH,rawA=1/h2hA,tot=rawH+rawA;const bp=rawH/tot;
+    const mp=calcModel(hA,aA,bp);const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
     let betTeamEn,betOdds,betEV,betType,betColor;
     if(spLine!==null){
@@ -512,12 +522,13 @@ function processOdds(data){
       else if(diff>0){betTeamEn=hEn;betOdds=spH||1.72;betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);betType=`讓分 ${spLine}`;betColor='green'}
       else{betTeamEn=aEn;betOdds=spA||1.72;betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);betType=`吃分 +${Math.abs(spLine)}`;betColor='blue'}
     }else{betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds);betType='不讓分';betColor='blue'}
-    const recLevel=conf>=80&&betEV>=15?'rec':betEV>=5?'con':'obs';
+    // ★ 改為 70% 門檻
+    const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const ouAnalysis=calcOU(hA,aA,ouLine);
     const st=new Date(game.commence_time);
     const tw=new Date(st.getTime()+8*3600000);
     const timeStr=`${tw.getMonth()+1}/${tw.getDate()} ${String(tw.getHours()).padStart(2,'0')}:${String(tw.getMinutes()).padStart(2,'0')} CST`;
-    games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ouOver,ouUnder,ouAnalysis,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1});
+    games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ouAnalysis,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1});
   }
   allGames=games;
   const recC=games.filter(g=>g.recLevel==='rec').length;
@@ -526,63 +537,53 @@ function processOdds(data){
   document.getElementById('statRec').textContent=recC;
   document.getElementById('statMaxEV').textContent=maxEV>0?`+${maxEV.toFixed(1)}%`:'—';
   document.getElementById('statAgree').textContent=games.filter(g=>g.agree).length;
-  renderAIPicks(games);
-  renderOU(games);
-  renderGames();
+  renderAIPicks(games);renderOU(games);renderGames();
 }
 
 function renderAIPicks(games){
-  const picks=games.filter(g=>g.conf>=80&&g.betEV>=15).sort((a,b)=>b.betEV-a.betEV).slice(0,4);
-  const section=document.getElementById('aiSection');
-  const container=document.getElementById('aiPicks');
+  const picks=games.filter(g=>g.conf>=70&&g.betEV>=10).sort((a,b)=>b.betEV-a.betEV).slice(0,5);
+  const section=document.getElementById('aiSection');const container=document.getElementById('aiPicks');
   if(!picks.length){section.style.display='none';return}
-  section.style.display='block';
-  container.innerHTML='';
+  section.style.display='block';container.innerHTML='';
   picks.forEach((g,i)=>{
     const betZH=zh(g.betTeamEn);
-    const card=document.createElement('div');
-    card.className='ai-pick-card'+(i===0?' top':'');
-    card.innerHTML=`
-      <div class="ai-pick-matchup">${zh(g.aEn)} @ ${zh(g.hEn)}</div>
-      <div class="ai-pick-team">${betZH}</div>
-      <div class="ai-pick-bet">${g.betType} · 賠率 ${g.betOdds?.toFixed(2)||'—'}</div>
-      <div class="ai-conf-bar-wrap"><div class="ai-conf-bar" style="width:${g.conf}%"></div></div>
-      <div class="ai-conf-label"><span>信心度</span><span>${g.conf}%</span></div>
-      <div class="ai-ev">EV +${g.betEV.toFixed(1)}%</div>
-      <div class="ai-rec-tag">${i===0?'🏆 本日首選':'✅ 串關推薦'}</div>`;
+    const card=document.createElement('div');card.className='ai-pick-card'+(i===0?' top':'');
+    card.innerHTML=`<div class="ai-pick-matchup">${zh(g.aEn)} @ ${zh(g.hEn)}</div>
+    <div class="ai-pick-team">${betZH}</div>
+    <div class="ai-pick-bet">${g.betType} · 賠率 ${g.betOdds?.toFixed(2)||'—'}</div>
+    <div class="ai-conf-bar-wrap"><div class="ai-conf-bar" style="width:${g.conf}%"></div></div>
+    <div class="ai-conf-label"><span>信心度</span><span>${g.conf}%</span></div>
+    <div class="ai-ev">EV +${g.betEV.toFixed(1)}%</div>
+    <div class="ai-rec-tag">${i===0?'🏆 本日首選':'✅ 串關推薦'}</div>`;
     container.appendChild(card);
   });
 }
 
 function renderOU(games){
-  const section=document.getElementById('ouSection');
-  const grid=document.getElementById('ouGrid');
+  const section=document.getElementById('ouSection');const grid=document.getElementById('ouGrid');
   const withOU=games.filter(g=>g.ouLine&&g.ouAnalysis);
   if(!withOU.length){section.style.display='none';return}
-  section.style.display='block';
-  grid.innerHTML='';
+  section.style.display='block';grid.innerHTML='';
   withOU.sort((a,b)=>b.ouAnalysis.conf-a.ouAnalysis.conf).slice(0,6).forEach(g=>{
-    const ou=g.ouAnalysis;
-    const confClass=ou.conf>=75?'high':ou.conf>=60?'mid':'low';
+    const ou=g.ouAnalysis;const confClass=ou.conf>=75?'high':ou.conf>=60?'mid':'low';
     const card=document.createElement('div');card.className='ou-card';
-    card.innerHTML=`
-      <div class="ou-matchup">${zh(g.aEn)} @ ${zh(g.hEn)} · ${g.timeStr}</div>
-      <div class="ou-line">大小 ${g.ouLine}</div>
-      <div class="ou-pick ${ou.pick==='大'?'big':'small'}">建議：${ou.pick} ${g.ouLine} ${ou.pick==='大'?'↑':'↓'}</div>
-      <div class="ou-reason">${ou.reason}</div>
-      <div class="ou-conf ${confClass}">${ou.conf>=75?'高信心':ou.conf>=60?'中等信心':'低信心'} ${ou.conf}%</div>`;
+    card.innerHTML=`<div class="ou-matchup">${zh(g.aEn)} @ ${zh(g.hEn)} · ${g.timeStr}</div>
+    <div class="ou-line">大小 ${g.ouLine}</div>
+    <div class="ou-pick ${ou.pick==='大'?'big':'small'}">建議：${ou.pick} ${g.ouLine} ${ou.pick==='大'?'↑':'↓'}</div>
+    <div class="ou-reason">${ou.reason}</div>
+    <div class="ou-conf ${confClass}">${ou.conf>=75?'高信心':ou.conf>=60?'中等信心':'低信心'} ${Math.round(ou.conf)}%</div>`;
     grid.appendChild(card);
   });
 }
 
 function renderGames(){
   let games=[...allGames];
-  if(currentFilter==='rec') games=games.filter(g=>g.recLevel==='rec');
-  else if(currentFilter==='con') games=games.filter(g=>g.recLevel==='con');
-  else if(currentFilter==='agree') games=games.filter(g=>g.agree);
-  if(currentSort==='ev') games.sort((a,b)=>b.betEV-a.betEV);
-  else if(currentSort==='time') games.sort((a,b)=>a.startTime-b.startTime);
-  else games.sort((a,b)=>Math.abs(b.ms-(b.spLine||0))-Math.abs(a.ms-(a.spLine||0)));
+  if(currentFilter==='rec')games=games.filter(g=>g.recLevel==='rec');
+  else if(currentFilter==='con')games=games.filter(g=>g.recLevel==='con');
+  else if(currentFilter==='agree')games=games.filter(g=>g.agree);
+  if(currentSort==='ev')games.sort((a,b)=>b.betEV-a.betEV);
+  else if(currentSort==='time')games.sort((a,b)=>a.startTime-b.startTime);
+  else games.sort((a,b)=>b.conf-a.conf);
   document.getElementById('gameCount').textContent=`${games.length} 場`;
   if(!games.length){document.getElementById('gamesContainer').innerHTML='<div class="loading-state" style="color:var(--text3)">沒有符合條件的比賽</div>';return}
   const container=document.getElementById('gamesContainer');container.innerHTML='';
@@ -595,24 +596,31 @@ function renderGames(){
     const spDiff=g.spLine!==null?(g.ms-g.spLine).toFixed(1):null;
     const h2hEV=calcEV(hP>=50?g.mp:1-g.mp,hP>=50?g.h2hH:g.h2hA);
     const recLabel=g.recLevel==='rec'?'⭐ 高信心推薦':g.recLevel==='con'?'🔶 可考慮':'— 觀望';
-    // 主隊佔右邊（大），客隊佔左邊（小）
-    const homeFlex=Math.max(hP,20);const awayFlex=Math.max(aP,20);
+
+    // ★ 修正：誰勝率高誰是 fav（綠色），不管主客場
+    const homeFav=hP>=aP;
+    const favP=homeFav?hP:aP;const dogP=homeFav?aP:hP;
+    const favZH=homeFav?hZH:aZH;const dogZH=homeFav?aZH:hZH;
+    const favRole=homeFav?'主場':'客場';const dogRole=homeFav?'客場':'主場';
+    const favInj=homeFav?injH:injA;const dogInj=homeFav?injA:injH;
+    const favFlex=Math.max(favP,30);const dogFlex=Math.max(dogP,20);
+
     const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
     card.innerHTML=`
       <div class="card-header"><div class="card-time">${g.timeStr}</div><div class="rec-badge ${g.recLevel}">${recLabel}</div></div>
-      <div class="matchup-prob" style="--hp:${homeFlex};--ap:${awayFlex}">
-        <div class="mp-team away" style="flex:${awayFlex}">
-          <div class="mp-label">客場</div>
-          <div class="mp-name">${aZH}</div>
-          <div class="mp-pct">${aP}%</div>
-          ${injA?`<div class="team-inj" style="font-size:9px;margin-top:3px">${injA}</div>`:''}
+      <div class="matchup-prob">
+        <div class="mp-team dog" style="flex:${dogFlex}">
+          <div class="mp-label">${dogRole}</div>
+          <div class="mp-name">${dogZH}</div>
+          <div class="mp-pct">${dogP}%</div>
+          ${dogInj?`<div class="mp-inj dog">${dogInj}</div>`:''}
         </div>
         <div class="mp-vs">VS</div>
-        <div class="mp-team home" style="flex:${homeFlex}">
-          <div class="mp-label">主場</div>
-          <div class="mp-name">${hZH}</div>
-          <div class="mp-pct">${hP}%</div>
-          ${injH?`<div class="team-inj" style="font-size:9px;margin-top:3px;color:rgba(255,255,255,0.8)">${injH}</div>`:''}
+        <div class="mp-team fav" style="flex:${favFlex}">
+          <div class="mp-label">${favRole}</div>
+          <div class="mp-name">${favZH}</div>
+          <div class="mp-pct">${favP}%</div>
+          ${favInj?`<div class="mp-inj fav">${favInj}</div>`:''}
         </div>
       </div>
       <div class="data-rows">
@@ -621,7 +629,7 @@ function renderGames(){
         <div class="data-row"><span class="dr-label">模型預測分差</span><span class="dr-val ${g.ms>=0?'g':'r'}">${g.ms>=0?hZH.slice(-2):aZH.slice(-2)} +${Math.abs(g.ms).toFixed(1)} 分</span></div>
         ${g.spLine!==null?`<div class="data-row"><span class="dr-label">博彩讓分</span><span class="dr-val">${g.spLine<0?hZH.slice(-2)+' '+g.spLine:aZH.slice(-2)+' +'+Math.abs(g.spLine)} 分</span></div>
         <div class="data-row"><span class="dr-label">模型 vs 讓分差值</span><span class="dr-val ${parseFloat(spDiff)>0?'g':parseFloat(spDiff)<0?'r':'a'}">${parseFloat(spDiff)>0?'+':''}${spDiff} 分</span></div>`:''}
-        ${g.ouLine?`<div class="data-row"><span class="dr-label">大小分盤口</span><span class="dr-val">${g.ouLine} · 建議：<span style="color:${g.ouAnalysis?.pick==='大'?'var(--red)':'var(--blue)'}">${g.ouAnalysis?.pick||'—'}</span></span></div>`:''}
+        ${g.ouLine?`<div class="data-row"><span class="dr-label">大小分</span><span class="dr-val">盤口 ${g.ouLine} · 建議：<span style="color:${g.ouAnalysis?.pick==='大'?'var(--red)':'var(--blue)'}">${g.ouAnalysis?.pick||'—'}</span> (${Math.round(g.ouAnalysis?.conf||0)}%)</span></div>`:''}
       </div>
       <div class="divider"></div>
       <div class="sources">
@@ -629,7 +637,7 @@ function renderGames(){
         <div class="source-card"><div class="source-name">ELO 模型</div><div class="source-pick">${hP>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(hP,aP)}%</div><span class="source-agree ${g.agree?'yes':'no'}">${g.agree?'✅ 方向一致':'⚠️ 方向分歧'}</span></div>
       </div>
       <div class="ev-section">
-        <div class="ev-title">📊 期望值分析（每下注 100 元）</div>
+        <div class="ev-title">📊 期望值（每下注 100 元）</div>
         <div class="ev-options">
           <div class="ev-opt ${g.betEV>=0?'pos':'neg'}"><div class="ev-type">${g.betType}</div><div class="ev-num ${g.betEV>=0?'pos':'neg'}">${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div><div class="ev-detail">${betZH.slice(-2)} 賠率 ${g.betOdds?.toFixed(2)||'—'}</div></div>
           <div class="ev-opt ${h2hEV>=0?'pos':'neg'}"><div class="ev-type">不讓分</div><div class="ev-num ${h2hEV>=0?'pos':'neg'}">${h2hEV>=0?'+':''}${h2hEV.toFixed(1)}%</div><div class="ev-detail">${hP>=50?hZH.slice(-2):aZH.slice(-2)} 賠率 ${(hP>=50?g.h2hH:g.h2hA)?.toFixed(2)||'—'}</div></div>
@@ -648,15 +656,12 @@ async function loadScores(){
   setStatus('score','loading','比分更新中...');
   try{
     const res=await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard');
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const data=await res.json();
     renderScores(data.events||[]);
-    setStatus('score','','比分已更新 '+new Date().toLocaleTimeString('zh-TW'));
+    setStatus('score','','已更新 '+new Date().toLocaleTimeString('zh-TW'));
     document.getElementById('scoreUpdated').textContent=new Date().toLocaleTimeString('zh-TW');
-  }catch(e){
-    setStatus('score','error','比分錯誤');
-    document.getElementById('scoresContainer').innerHTML=`<div class="error-state">❌ ${e.message}</div>`;
-  }
+  }catch(e){setStatus('score','error','比分錯誤');document.getElementById('scoresContainer').innerHTML=`<div class="error-state">❌ ${e.message}</div>`}
 }
 
 function renderScores(events){
@@ -664,43 +669,26 @@ function renderScores(events){
   if(!events.length){c.innerHTML='<div class="loading-state" style="color:var(--text3)">今日無賽事</div>';return}
   const grid=document.createElement('div');grid.className='scores-grid';
   for(const ev of events){
-    const comp=ev.competitions[0];
-    const status=ev.status.type;
+    const comp=ev.competitions[0];const status=ev.status.type;
     const isLive=status.state==='in',isFinal=status.state==='post';
-    const home=comp.competitors.find(c=>c.homeAway==='home');
-    const away=comp.competitors.find(c=>c.homeAway==='away');
+    const home=comp.competitors.find(c=>c.homeAway==='home');const away=comp.competitors.find(c=>c.homeAway==='away');
     const homeWin=isFinal&&parseInt(home?.score||0)>parseInt(away?.score||0);
     const awayWin=isFinal&&parseInt(away?.score||0)>parseInt(home?.score||0);
     const statusText=isLive?`第${ev.status.period}節 ${ev.status.displayClock}`:isFinal?'終場':ev.status.type.shortDetail||'未開始';
     const card=document.createElement('div');card.className=`score-card${isLive?' live-game':''}`;
-    card.innerHTML=`
-      <div class="game-status ${isLive?'live':isFinal?'final':'pre'}">${statusText}</div>
-      <div class="score-divider"></div>
-      <div class="score-team-row"><span class="score-team-name ${awayWin?'winner':''}">${zh(away?.team?.displayName||away?.team?.name||'')}</span><span class="score-pts ${awayWin?'winner':''}">${isLive||isFinal?away?.score||'0':'—'}</span></div>
-      <div class="score-team-row" style="margin-top:4px"><span class="score-team-name ${homeWin?'winner':''}">${zh(home?.team?.displayName||home?.team?.name||'')}</span><span class="score-pts ${homeWin?'winner':''}">${isLive||isFinal?home?.score||'0':'—'}</span></div>`;
+    card.innerHTML=`<div class="game-status ${isLive?'live':isFinal?'final':'pre'}">${statusText}</div>
+    <div class="score-divider"></div>
+    <div class="score-team-row"><span class="score-team-name ${awayWin?'winner':''}">${zh(away?.team?.displayName||away?.team?.name||'')}</span><span class="score-pts ${awayWin?'winner':''}">${isLive||isFinal?away?.score||'0':'—'}</span></div>
+    <div class="score-team-row" style="margin-top:4px"><span class="score-team-name ${homeWin?'winner':''}">${zh(home?.team?.displayName||home?.team?.name||'')}</span><span class="score-pts ${homeWin?'winner':''}">${isLive||isFinal?home?.score||'0':'—'}</span></div>`;
     grid.appendChild(card);
   }
   c.innerHTML='';c.appendChild(grid);
 }
 
-function renderHist(){
-  const tbody=document.getElementById('histBody');tbody.innerHTML='';
-  histFull.forEach(h=>{
-    const bw=Math.round((h.conf-50)/50*80);
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${h.date}</td><td>${h.away} @ ${h.home}</td>
-    <td><div class="conf-bar-wrap"><div class="conf-bar" style="width:${bw}px"></div><span class="conf-num">${h.conf}%</span></div></td>
-    <td style="font-weight:600">${h.pick}</td><td>${h.winner}</td>
-    <td style="color:var(--text3);font-family:'JetBrains Mono',monospace">${h.score}</td>
-    <td>${h.ok?'<span class="result-ok">✓</span>':'<span class="result-ng">✗</span>'}</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
 window.onload=()=>{
-  updateWinStats();
+  updateWinStats();renderHist();
   const saved=localStorage.getItem('oddsApiKey');
-  if(saved){document.getElementById('oddsApiKey').value=saved;startAutoRefresh();}
+  if(saved){document.getElementById('oddsApiKey').value=saved;startAutoRefresh()}
   else loadScores();
 };
 </script>
