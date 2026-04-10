@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBA 預測系統</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  :root {
+    --bg:#0a0c10;--bg2:#111318;--bg3:#1a1d24;
+    --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+    --text:#f0f2f5;--text2:#8b90a0;--text3:#555a6a;
+    --green:#00d68f;--green2:rgba(0,214,143,0.12);--green3:rgba(0,214,143,0.06);
+    --red:#ff4d6d;--red2:rgba(255,77,109,0.12);
+    --amber:#ffb830;--amber2:rgba(255,184,48,0.12);
+    --blue:#4d9fff;--blue2:rgba(77,159,255,0.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;overflow-x:hidden}
+  header{position:sticky;top:0;z-index:100;background:rgba(10,12,16,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--green);display:flex;align-items:center;gap:8px}
+  .logo-dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+  .header-right{display:flex;align-items:center;gap:12px}
+  .api-status{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:6px}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+  .status-dot.loading{background:var(--amber);animation:pulse 1s infinite}
+  .status-dot.error{background:var(--red)}
+  .refresh-btn{background:var(--green2);border:1px solid rgba(0,214,143,0.3);color:var(--green);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all 0.2s}
+  .refresh-btn:hover{background:rgba(0,214,143,0.2)}
+  main{max-width:1100px;margin:0 auto;padding:1.5rem 1.5rem 3rem}
+  .api-config{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:1.5rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .api-config label{font-size:12px;color:var(--text2);white-space:nowrap}
+  .api-config input{flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace}
+  .api-config input:focus{outline:none;border-color:rgba(0,214,143,0.4)}
+  .apply-btn{background:var(--green2);border:1px solid rgba(0,214,143,0.3);color:var(--green);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;transition:all 0.2s}
+  .apply-btn:hover{background:rgba(0,214,143,0.2)}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .stat-label{font-size:11px;color:var(--text2);margin-bottom:6px;letter-spacing:0.5px}
+  .stat-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--green)}
+  .stat-sub{font-size:11px;color:var(--text3);margin-top:3px}
+  .filter-bar{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .filter-group{display:flex;gap:6px;flex-wrap:wrap}
+  .filter-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all 0.2s}
+  .filter-btn:hover{border-color:var(--border2);color:var(--text)}
+  .filter-btn.active{background:var(--green2);border-color:rgba(0,214,143,0.4);color:var(--green)}
+  .sort-select{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:6px;font-size:12px;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+  .section-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+  .section-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--text)}
+  .section-count{font-size:11px;color:var(--text3);background:var(--bg3);padding:2px 8px;border-radius:10px}
+  .games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .game-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;transition:border-color 0.2s,transform 0.15s;position:relative;overflow:hidden}
+  .game-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:transparent;transition:background 0.2s}
+  .game-card.rec::before{background:var(--green)}
+  .game-card.con::before{background:var(--amber)}
+  .game-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+  .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .card-time{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+  .rec-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.5px}
+  .rec-badge.rec{background:var(--green2);color:var(--green);border:1px solid rgba(0,214,143,0.3)}
+  .rec-badge.con{background:var(--amber2);color:var(--amber);border:1px solid rgba(255,184,48,0.3)}
+  .rec-badge.obs{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+  .matchup{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .team{text-align:center;flex:1}
+  .team-name{font-size:13px;font-weight:700;color:var(--text);line-height:1.3}
+  .team-record{font-size:10px;color:var(--text3);margin-top:2px}
+  .team-inj{font-size:10px;color:var(--red);margin-top:2px}
+  .at{font-size:12px;color:var(--text3);padding:0 6px}
+  .prob-bar{display:flex;height:26px;border-radius:6px;overflow:hidden;margin-bottom:6px;background:var(--bg3)}
+  .prob-away{display:flex;align-items:center;padding:0 8px;font-size:11px;color:var(--text2);transition:width 0.6s ease}
+  .prob-home{display:flex;align-items:center;justify-content:flex-end;padding:0 8px;font-size:11px;font-weight:600;color:#000;background:var(--green);transition:width 0.6s ease}
+  .prob-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:10px;font-family:'JetBrains Mono',monospace}
+  .data-rows{margin-bottom:10px}
+  .data-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px}
+  .data-row:last-child{border-bottom:none}
+  .dr-label{color:var(--text3)}
+  .dr-val{font-weight:500;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px}
+  .dr-val.g{color:var(--green)}.dr-val.r{color:var(--red)}.dr-val.a{color:var(--amber)}.dr-val.b{color:var(--blue)}
+  .sources{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+  .source-card{background:var(--bg3);border-radius:6px;padding:8px 10px;border:1px solid var(--border)}
+  .source-name{font-size:10px;color:var(--text3);margin-bottom:3px}
+  .source-pick{font-size:12px;font-weight:600;color:var(--text)}
+  .source-prob{font-size:10px;color:var(--green);font-family:'JetBrains Mono',monospace}
+  .source-agree{font-size:10px;margin-top:4px;padding:2px 6px;border-radius:3px;display:inline-block}
+  .source-agree.yes{background:var(--green2);color:var(--green)}
+  .source-agree.no{background:var(--red2);color:var(--red)}
+  .ev-section{background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--border)}
+  .ev-title{font-size:10px;color:var(--text3);margin-bottom:8px;letter-spacing:0.5px}
+  .ev-options{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .ev-opt{border-radius:6px;padding:8px;border:1px solid transparent}
+  .ev-opt.pos{background:var(--green3);border-color:rgba(0,214,143,0.2)}
+  .ev-opt.neg{background:var(--red2);border-color:rgba(255,77,109,0.15)}
+  .ev-opt.neu{background:rgba(255,255,255,0.03);border-color:var(--border)}
+  .ev-type{font-size:10px;color:var(--text3);margin-bottom:3px}
+  .ev-num{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600}
+  .ev-num.pos{color:var(--green)}.ev-num.neg{color:var(--red)}
+  .ev-detail{font-size:10px;color:var(--text3);margin-top:2px}
+  .bet-box{border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+  .bet-box.green{background:linear-gradient(135deg,rgba(0,214,143,0.2),rgba(0,214,143,0.1));border:1px solid rgba(0,214,143,0.3)}
+  .bet-box.blue{background:linear-gradient(135deg,rgba(77,159,255,0.2),rgba(77,159,255,0.1));border:1px solid rgba(77,159,255,0.3)}
+  .bet-label{font-size:10px;color:var(--text3);margin-bottom:3px}
+  .bet-val{font-size:13px;font-weight:700;color:var(--text)}
+  .bet-right{text-align:right}
+  .bet-odds{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--green)}
+  .bet-ev{font-size:11px;color:var(--text2);margin-top:2px}
+  .divider{border:none;border-top:1px solid var(--border);margin:10px 0}
+  .loading-state{text-align:center;padding:4rem 2rem;color:var(--text3)}
+  .loading-spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error-state{background:var(--red2);border:1px solid rgba(255,77,109,0.3);border-radius:10px;padding:1.5rem;text-align:center;color:var(--red);margin:2rem 0}
+  .warn-box{background:var(--amber2);border:1px solid rgba(255,184,48,0.3);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--amber);margin-bottom:8px}
+  @media(max-width:600px){
+    .stats-row{grid-template-columns:repeat(2,1fr)}
+    .games-grid{grid-template-columns:1fr}
+    header{padding:0 1rem}
+    main{padding:1rem}
+    .api-config{flex-direction:column;align-items:stretch}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-dot"></div>NBA 預測系統</div>
+  <div class="header-right">
+    <div class="api-status">
+      <div class="status-dot loading" id="statusDot"></div>
+      <span id="statusText">載入中...</span>
+    </div>
+    <button class="refresh-btn" onclick="loadAll()">🔄 重新整理</button>
+  </div>
+</header>
+
+<main>
+  <div class="api-config">
+    <label>The Odds API Key：</label>
+    <input type="text" id="oddsApiKey" placeholder="輸入你的 API Key" />
+    <button class="apply-btn" onclick="saveAndLoad()">套用並載入</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">今日場次</div><div class="stat-val" id="statGames">—</div><div class="stat-sub">NBA 賽程</div></div>
+    <div class="stat-card"><div class="stat-label">推薦場次</div><div class="stat-val" id="statRec">—</div><div class="stat-sub">期望值 &gt; 10%</div></div>
+    <div class="stat-card"><div class="stat-label">最高期望值</div><div class="stat-val" id="statMaxEV">—</div><div class="stat-sub">本日最佳</div></div>
+    <div class="stat-card"><div class="stat-label">來源一致場次</div><div class="stat-val" id="statAgree">—</div><div class="stat-sub">模型 + 博彩商</div></div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <button class="filter-btn active" onclick="setFilter('all',this)">全部</button>
+      <button class="filter-btn" onclick="setFilter('rec',this)">⭐ 推薦</button>
+      <button class="filter-btn" onclick="setFilter('con',this)">🔶 可考慮</button>
+      <button class="filter-btn" onclick="setFilter('agree',this)">✅ 來源一致</button>
+    </div>
+    <select class="sort-select" onchange="setSort(this.value)">
+      <option value="ev">依期望值排序</option>
+      <option value="time">依時間排序</option>
+      <option value="edge">依 Edge 排序</option>
+    </select>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">即將開打</div>
+    <div class="section-count" id="gameCount">0 場</div>
+  </div>
+
+  <div id="gamesContainer">
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <div>請輸入 API Key 並點擊「套用並載入」</div>
+    </div>
+  </div>
+</main>
+
+<script>
+const teamZH={"Atlanta Hawks":"亞特蘭大老鷹","Boston Celtics":"波士頓塞爾提克","Brooklyn Nets":"布魯克林籃網","Charlotte Hornets":"夏洛特黃蜂","Chicago Bulls":"芝加哥公牛","Cleveland Cavaliers":"克里夫蘭騎士","Dallas Mavericks":"達拉斯獨行俠","Denver Nuggets":"丹佛金塊","Detroit Pistons":"底特律活塞","Golden State Warriors":"金州勇士","Houston Rockets":"休士頓火箭","Indiana Pacers":"印第安納溜馬","Los Angeles Clippers":"洛杉磯快艇","Los Angeles Lakers":"洛杉磯湖人","Memphis Grizzlies":"曼菲斯灰熊","Miami Heat":"邁阿密熱火","Milwaukee Bucks":"密爾瓦基公鹿","Minnesota Timberwolves":"明尼蘇達灰狼","New Orleans Pelicans":"紐奧良鵜鶘","New York Knicks":"紐約尼克","Oklahoma City Thunder":"奧克拉荷馬雷霆","Orlando Magic":"奧蘭多魔術","Philadelphia 76ers":"費城76人","Phoenix Suns":"鳳凰城太陽","Portland Trail Blazers":"波特蘭拓荒者","Sacramento Kings":"沙加緬度國王","San Antonio Spurs":"聖安東尼奧馬刺","Toronto Raptors":"多倫多暴龍","Utah Jazz":"猶他爵士","Washington Wizards":"華盛頓巫師"};
+function zh(en){return teamZH[en]||en}
+
+const teamData={SAS:{elo:1903,pts:118.2,opp:105.1},OKC:{elo:1869,pts:120.5,opp:107.3},BOS:{elo:1759,pts:117.8,opp:108.9},DET:{elo:1723,pts:115.4,opp:109.2},NYK:{elo:1720,pts:114.1,opp:109.8},ATL:{elo:1697,pts:116.3,opp:112.1},CLE:{elo:1677,pts:113.9,opp:108.4},LAL:{elo:1666,pts:112.7,opp:110.5},DEN:{elo:1651,pts:114.5,opp:111.2},CHA:{elo:1635,pts:111.8,opp:113.5},HOU:{elo:1596,pts:113.2,opp:110.8},ORL:{elo:1578,pts:109.4,opp:107.6},LAC:{elo:1558,pts:110.2,opp:111.9},TOR:{elo:1500,pts:108.6,opp:114.2},GSW:{elo:1488,pts:107.9,opp:113.1},MIA:{elo:1470,pts:107.2,opp:115.3},MIL:{elo:1450,pts:108.8,opp:114.1},IND:{elo:1430,pts:118.5,opp:121.2},NOP:{elo:1380,pts:108.2,opp:116.5},PHX:{elo:1360,pts:106.5,opp:115.8},SAC:{elo:1340,pts:115.2,opp:118.4},MIN:{elo:1320,pts:109.8,opp:116.2},MEM:{elo:1300,pts:111.4,opp:119.2},CHI:{elo:1280,pts:104.6,opp:117.8},DAL:{elo:1250,pts:104.2,opp:117.8},PHI:{elo:1220,pts:103.8,opp:118.5},POR:{elo:1200,pts:106.2,opp:120.4},BKN:{elo:1180,pts:106.4,opp:118.2},WAS:{elo:1150,pts:105.8,opp:121.5},UTA:{elo:1120,pts:107.6,opp:122.3}};
+
+const injuries={MIA:["吉米·巴特勒（膝 缺陣）"],DAL:["盧卡·唐西奇（膝 缺陣）"],BOS:["波爾辛吉斯（腿 存疑）"],LAL:["勒布朗·詹姆斯（腳 存疑）"],MEM:["賈·莫蘭特（手 存疑）"],PHI:["喬爾·恩比德（膝 缺陣）"],OKC:["切特·霍姆格倫（背 存疑）"]};
+
+const abbrMap={"Atlanta Hawks":"ATL","Boston Celtics":"BOS","Brooklyn Nets":"BKN","Charlotte Hornets":"CHA","Chicago Bulls":"CHI","Cleveland Cavaliers":"CLE","Dallas Mavericks":"DAL","Denver Nuggets":"DEN","Detroit Pistons":"DET","Golden State Warriors":"GSW","Houston Rockets":"HOU","Indiana Pacers":"IND","Los Angeles Clippers":"LAC","Los Angeles Lakers":"LAL","Memphis Grizzlies":"MEM","Miami Heat":"MIA","Milwaukee Bucks":"MIL","Minnesota Timberwolves":"MIN","New Orleans Pelicans":"NOP","New York Knicks":"NYK","Oklahoma City Thunder":"OKC","Orlando Magic":"ORL","Philadelphia 76ers":"PHI","Phoenix Suns":"PHX","Portland Trail Blazers":"POR","Sacramento Kings":"SAC","San Antonio Spurs":"SAS","Toronto Raptors":"TOR","Utah Jazz":"UTA","Washington Wizards":"WAS"};
+function getAbbr(n){return abbrMap[n]||n.substring(0,3).toUpperCase()}
+function injPenalty(a){return(injuries[a]||[]).reduce((s,i)=>s+(i.includes("缺陣")?4:1.5),0)}
+function calcEV(p,o){return(p*o-1)*100}
+
+function calcModel(hA,aA,bookieProb){
+  const h=teamData[hA]||{elo:1400,pts:110,opp:110};
+  const a=teamData[aA]||{elo:1400,pts:110,opp:110};
+  const eloDiff=h.elo-a.elo+70;
+  const eloProb=1/(1+Math.pow(10,-eloDiff/400));
+  const offEdge=(h.pts-a.opp)-(a.pts-h.opp);
+  const offProb=0.5+offEdge*0.012;
+  const injAdj=(injPenalty(aA)-injPenalty(hA))*0.02;
+  const modelProb=eloProb*0.35+offProb*0.25+bookieProb*0.3+0.5*0.1+injAdj;
+  return Math.max(0.05,Math.min(0.95,modelProb));
+}
+
+let allGames=[],currentFilter='all',currentSort='ev';
+
+function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderGames()}
+function setSort(s){currentSort=s;renderGames()}
+
+function saveAndLoad(){
+  const key=document.getElementById('oddsApiKey').value.trim();
+  if(key) localStorage.setItem('oddsApiKey',key);
+  loadAll();
+}
+
+async function loadAll(){
+  const key=document.getElementById('oddsApiKey').value.trim()||localStorage.getItem('oddsApiKey')||'';
+  if(!key){document.getElementById('gamesContainer').innerHTML='<div class="error-state">請先輸入 The Odds API Key</div>';return}
+  document.getElementById('oddsApiKey').value=key;
+  const dot=document.getElementById('statusDot');
+  const txt=document.getElementById('statusText');
+  dot.className='status-dot loading';txt.textContent='載入中...';
+  document.getElementById('gamesContainer').innerHTML='<div class="loading-state"><div class="loading-spinner"></div><div>正在連接 The Odds API...</div></div>';
+  try{
+    const res=await fetch(`https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${key}&regions=us&markets=h2h,spreads&oddsFormat=decimal&dateFormat=iso`);
+    if(!res.ok){const e=await res.json();throw new Error(e.message||`HTTP ${res.status}`)}
+    const data=await res.json();
+    const games=[];
+    for(const game of data){
+      const hEn=game.home_team,aEn=game.away_team;
+      const hA=getAbbr(hEn),aA=getAbbr(aEn);
+      let h2hH=null,h2hA=null,spLine=null,spH=null,spA=null;
+      for(const bk of(game.bookmakers||[])){
+        for(const mk of(bk.markets||[])){
+          if(mk.key==='h2h'){
+            const ho=mk.outcomes.find(o=>o.name===hEn);
+            const ao=mk.outcomes.find(o=>o.name===aEn);
+            if(ho&&ao){h2hH=ho.price;h2hA=ao.price}
+          }
+          if(mk.key==='spreads'){
+            const ho=mk.outcomes.find(o=>o.name===hEn);
+            const ao=mk.outcomes.find(o=>o.name===aEn);
+            if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price}
+          }
+        }
+        break;
+      }
+      if(!h2hH)continue;
+      const rawH=1/h2hH,rawA=1/h2hA,tot=rawH+rawA;
+      const bookieProb=rawH/tot;
+      const modelProb=calcModel(hA,aA,bookieProb);
+      const modelSpread=(modelProb-0.5)*28;
+      let betTeamEn,betOdds,betEV,betType,betColor;
+      if(spLine!==null){
+        const diff=modelSpread-spLine;
+        if(Math.abs(diff)<0.5){betTeamEn=modelProb>=0.5?hEn:aEn;betOdds=modelProb>=0.5?h2hH:h2hA;betEV=calcEV(modelProb>=0.5?modelProb:1-modelProb,betOdds);betType='不讓分';betColor='blue'}
+        else if(diff>0){betTeamEn=hEn;betOdds=spH||1.72;betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);betType=`讓分 ${spLine}`;betColor='green'}
+        else{betTeamEn=aEn;betOdds=spA||1.72;betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);betType=`吃分 +${Math.abs(spLine)}`;betColor='blue'}
+      } else{
+        betTeamEn=modelProb>=0.5?hEn:aEn;betOdds=modelProb>=0.5?h2hH:h2hA;
+        betEV=calcEV(modelProb>=0.5?modelProb:1-modelProb,betOdds);betType='不讓分';betColor='blue'
+      }
+      const recLevel=betEV>=15?'rec':betEV>=5?'con':'obs';
+      const st=new Date(game.commence_time);
+      const tw=new Date(st.getTime()+8*3600000);
+      const timeStr=`${tw.getMonth()+1}/${tw.getDate()} ${String(tw.getHours()).padStart(2,'0')}:${String(tw.getMinutes()).padStart(2,'0')} CST`;
+      games.push({hEn,aEn,hA,aA,modelProb,bookieProb,h2hH,h2hA,spLine,spH,spA,modelSpread,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(modelProb-bookieProb)<0.1});
+    }
+    allGames=games;
+    const recC=games.filter(g=>g.recLevel==='rec').length;
+    const maxEV=games.length>0?Math.max(...games.map(g=>g.betEV)):0;
+    document.getElementById('statGames').textContent=games.length;
+    document.getElementById('statRec').textContent=recC;
+    document.getElementById('statMaxEV').textContent=maxEV>0?`+${maxEV.toFixed(1)}%`:'—';
+    document.getElementById('statAgree').textContent=games.filter(g=>g.agree).length;
+    dot.className='status-dot';txt.textContent=`已更新 ${new Date().toLocaleTimeString('zh-TW')}`;
+    renderGames();
+  }catch(e){
+    dot.className='status-dot error';txt.textContent='API 錯誤';
+    document.getElementById('gamesContainer').innerHTML=`<div class="error-state">❌ 載入失敗：${e.message}<br><br>請確認 API Key 是否正確</div>`;
+  }
+}
+
+function renderGames(){
+  let games=[...allGames];
+  if(currentFilter==='rec') games=games.filter(g=>g.recLevel==='rec');
+  else if(currentFilter==='con') games=games.filter(g=>g.recLevel==='con');
+  else if(currentFilter==='agree') games=games.filter(g=>g.agree);
+  if(currentSort==='ev') games.sort((a,b)=>b.betEV-a.betEV);
+  else if(currentSort==='time') games.sort((a,b)=>a.startTime-b.startTime);
+  else if(currentSort==='edge') games.sort((a,b)=>Math.abs(b.modelSpread-(b.spLine||0))-Math.abs(a.modelSpread-(a.spLine||0)));
+  document.getElementById('gameCount').textContent=`${games.length} 場`;
+  if(games.length===0){document.getElementById('gamesContainer').innerHTML='<div class="loading-state" style="color:var(--text3)">目前沒有符合條件的比賽</div>';return}
+  const container=document.getElementById('gamesContainer');
+  container.innerHTML='';
+  const grid=document.createElement('div');grid.className='games-grid';
+  for(const g of games){
+    const hP=Math.round(g.modelProb*100),aP=100-hP;
+    const hZH=zh(g.hEn),aZH=zh(g.aEn),betZH=zh(g.betTeamEn);
+    const injH=(injuries[g.hA]||[]).join('、')||'';
+    const injA=(injuries[g.aA]||[]).join('、')||'';
+    const bkH=Math.round(g.bookieProb*100);
+    const spDiff=g.spLine!==null?(g.modelSpread-g.spLine).toFixed(1):null;
+    const h2hEV=calcEV(hP>=50?g.modelProb:1-g.modelProb,hP>=50?g.h2hH:g.h2hA);
+    const recLabel=g.recLevel==='rec'?'⭐ 推薦':g.recLevel==='con'?'🔶 可考慮':'— 觀望';
+    const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
+    card.innerHTML=`
+      <div class="card-header"><div class="card-time">${g.timeStr}</div><div class="rec-badge ${g.recLevel}">${recLabel}</div></div>
+      <div class="matchup">
+        <div class="team"><div class="team-name">${aZH}</div><div class="team-record">客場</div>${injA?`<div class="team-inj">${injA}</div>`:''}</div>
+        <div class="at">@</div>
+        <div class="team"><div class="team-name">${hZH}</div><div class="team-record">主場</div>${injH?`<div class="team-inj">${injH}</div>`:''}</div>
+      </div>
+      <div class="prob-bar">
+        <div class="prob-away" style="width:${aP}%">${aP>28?aZH.slice(-2)+' '+aP+'%':''}</div>
+        <div class="prob-home" style="width:${hP}%">${hP>28?hZH.slice(-2)+' '+hP+'%':''}</div>
+      </div>
+      <div class="prob-labels"><span>綜合模型勝率</span><span>${hZH.slice(-2)} ${hP}% / ${aZH.slice(-2)} ${aP}%</span></div>
+      <div class="data-rows">
+        <div class="data-row"><span class="dr-label">博彩商隱含勝率</span><span class="dr-val b">${hZH.slice(-2)} ${bkH}% / ${aZH.slice(-2)} ${100-bkH}%</span></div>
+        <div class="data-row"><span class="dr-label">ELO 評分</span><span class="dr-val">${aZH.slice(-2)} ${teamData[g.aA]?.elo||'—'} / ${hZH.slice(-2)} ${teamData[g.hA]?.elo||'—'}</span></div>
+        <div class="data-row"><span class="dr-label">模型預測分差</span><span class="dr-val ${g.modelSpread>=0?'g':'r'}">${g.modelSpread>=0?hZH.slice(-2):aZH.slice(-2)} +${Math.abs(g.modelSpread).toFixed(1)} 分</span></div>
+        ${g.spLine!==null?`
+        <div class="data-row"><span class="dr-label">博彩讓分</span><span class="dr-val">${g.spLine<0?hZH.slice(-2)+' '+g.spLine:aZH.slice(-2)+' +'+Math.abs(g.spLine)} 分</span></div>
+        <div class="data-row"><span class="dr-label">模型 vs 讓分差值</span><span class="dr-val ${parseFloat(spDiff)>0?'g':parseFloat(spDiff)<0?'r':'a'}">${parseFloat(spDiff)>0?'+':''}${spDiff} 分</span></div>`:''}
+      </div>
+      <div class="divider"></div>
+      <div class="sources">
+        <div class="source-card"><div class="source-name">博彩商綜合</div><div class="source-pick">${bkH>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(bkH,100-bkH)}%</div></div>
+        <div class="source-card"><div class="source-name">ELO + 得失分模型</div><div class="source-pick">${hP>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(hP,aP)}%</div><span class="source-agree ${g.agree?'yes':'no'}">${g.agree?'✅ 方向一致':'⚠️ 方向分歧'}</span></div>
+      </div>
+      <div class="ev-section">
+        <div class="ev-title">📊 期望值分析（每下注 100 元）</div>
+        <div class="ev-options">
+          <div class="ev-opt ${g.betEV>=0?'pos':'neg'}"><div class="ev-type">${g.betType}</div><div class="ev-num ${g.betEV>=0?'pos':'neg'}">${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div><div class="ev-detail">${betZH.slice(-2)} 賠率 ${g.betOdds?.toFixed(2)||'—'}</div></div>
+          <div class="ev-opt ${h2hEV>=0?'pos':'neg'}"><div class="ev-type">不讓分</div><div class="ev-num ${h2hEV>=0?'pos':'neg'}">${h2hEV>=0?'+':''}${h2hEV.toFixed(1)}%</div><div class="ev-detail">${hP>=50?hZH.slice(-2):aZH.slice(-2)} 賠率 ${(hP>=50?g.h2hH:g.h2hA)?.toFixed(2)||'—'}</div></div>
+        </div>
+      </div>
+      <div class="bet-box ${g.betColor}">
+        <div><div class="bet-label">最佳下注建議</div><div class="bet-val">${betZH} ${g.betType}</div></div>
+        <div class="bet-right"><div class="bet-odds">賠率 ${g.betOdds?.toFixed(2)||'—'}</div><div class="bet-ev">期望值 ${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div></div>
+      </div>`;
+    grid.appendChild(card);
+  }
+  container.appendChild(grid);
+}
+
+// 啟動時讀取儲存的 Key
+window.onload=()=>{
+  const saved=localStorage.getItem('oddsApiKey');
+  if(saved){document.getElementById('oddsApiKey').value=saved;loadAll()}
+};
+</script>
+</body>
+</html>
