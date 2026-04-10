@@ -314,7 +314,8 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div class="tw-quota" id="twQuota">尚未載入</div>
-        <button class="tw-fetch-btn" onclick="fetchTWOdds()">🇹🇼 抓取今日讓分</button>
+        <button class="tw-fetch-btn" onclick="fetchTWOdds(false)">🇹🇼 載入今日讓分</button>
+        <button class="tw-fetch-btn" onclick="fetchTWOdds(true)" style="background:var(--amber);margin-left:6px;font-size:12px;padding:7px 14px">🔄 強制重新抓取</button>
       </div>
     </div>
     <div id="twContainer"><div class="loading-state" style="padding:3rem 0"><div style="font-size:3rem;margin-bottom:1rem">🇹🇼</div><div>點擊「抓取今日讓分」按鈕載入台灣運彩資料</div></div></div>
@@ -382,6 +383,10 @@ function showPage(id,btn){
   document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');
   if(id==='scores')loadScores();
   if(id==='backtest')loadBacktest();
+  if(id==='twodds'){
+    const cached=getTWCache();
+    if(cached){renderTWOdds(cached.games);if(cached.quota&&cached.quota.day_limit)document.getElementById('twQuota').textContent=`今日額度：${cached.quota.day_used}/${cached.quota.day_limit} 次（快取）`;}
+  }
 }
 function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderGames()}
 function setSort(s){currentSort=s;renderGames()}
@@ -422,8 +427,37 @@ async function loadStatsFromServer(){
   }catch(e){setStatus('backend','error','後端連線失敗')}
 }
 
-// ── 台灣運彩分析
-async function fetchTWOdds(){
+// ── 台灣運彩分析（含 localStorage 快取，避免重複浪費次數）
+function getTWCache(){
+  try{
+    const cached=localStorage.getItem('twOddsCache');
+    if(!cached) return null;
+    const obj=JSON.parse(cached);
+    // 只用今天的快取
+    const today=new Date().toISOString().slice(0,10);
+    if(obj.date===today) return obj;
+    return null;
+  }catch(e){return null}
+}
+function setTWCache(data){
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    localStorage.setItem('twOddsCache',JSON.stringify({date:today,...data}));
+  }catch(e){}
+}
+
+async function fetchTWOdds(forceRefresh=false){
+  // 檢查快取
+  if(!forceRefresh){
+    const cached=getTWCache();
+    if(cached){
+      renderTWOdds(cached.games);
+      if(cached.quota&&cached.quota.day_limit){
+        document.getElementById('twQuota').textContent=`今日額度：${cached.quota.day_used}/${cached.quota.day_limit} 次（快取）`;
+      }
+      return;
+    }
+  }
   document.getElementById('twContainer').innerHTML='<div class="loading-state"><div class="loading-spinner"></div><div>正在抓取台灣運彩資料...</div></div>';
   try{
     const res=await fetch(`${BACKEND}/api/tw-odds`);
@@ -432,6 +466,8 @@ async function fetchTWOdds(){
       document.getElementById('twContainer').innerHTML=`<div class="error-state">❌ ${data.message}</div>`;
       return;
     }
+    // 存入快取
+    setTWCache(data);
     const quota=data.quota;
     if(quota&&quota.day_limit) document.getElementById('twQuota').textContent=`今日額度：${quota.day_used}/${quota.day_limit} 次`;
     renderTWOdds(data.games);
