@@ -660,6 +660,16 @@ function renderSpreadAnalysis(){
 }
 let allGames=[],currentFilter='all',currentSort='ev';
 
+function addToParlayBtn(btn){
+  const teamEn=btn.dataset.teamEn;
+  const teamZH=btn.dataset.teamZh;
+  const betType=btn.dataset.betType;
+  const odds=parseFloat(btn.dataset.odds);
+  const conf=parseInt(btn.dataset.conf);
+  const ev=parseFloat(btn.dataset.ev);
+  addToParlay(teamEn,teamZH,betType,odds,conf,ev);
+}
+
 function addToParlay(teamEn, teamZH, betType, odds, conf, ev){
   // 檢查是否已加入
   if(parlayPicks.find(p=>p.teamEn===teamEn)){
@@ -1382,7 +1392,14 @@ function renderGames(){
         <div class="bet-right"><div class="bet-odds">賠率 ${g.betOdds?.toFixed(2)||'—'}</div><div class="bet-ev">期望值 ${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div></div>
       </div>
       ${!g.isFinal&&!g.isLive&&g.betOdds?`
-      <button class="add-parlay-btn" style="width:100%;margin-top:6px;padding:7px;" onclick="addToParlay('${g.betTeamEn}','${betZH}','${g.betType}',${g.betOdds?.toFixed(2)||1.72},${g.conf},${g.betEV?.toFixed(1)||0})">
+      <button class="add-parlay-btn"
+        data-team-en="${g.betTeamEn}"
+        data-team-zh="${betZH}"
+        data-bet-type="${g.betType}"
+        data-odds="${g.betOdds?.toFixed(2)||1.72}"
+        data-conf="${g.conf}"
+        data-ev="${g.betEV?.toFixed(1)||0}"
+        onclick="addToParlayBtn(this)">
         ＋ 加入串關（賠率 ${g.betOdds?.toFixed(2)||'—'}）
       </button>`:''}
       ${!g.isFinal&&!g.isLive?(()=>{
