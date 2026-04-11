@@ -587,8 +587,9 @@ function renderPredHist(){
   btn.style.display=predHistShowCount>=data.length?'none':'block';
   if(predHistShowCount<data.length) btn.textContent=`載入更多（還有 ${data.length-predHistShowCount} 筆）↓`;
 }
-let oddsTimer=null,scoreTimer=null;
+let oddsTimer=null,scoreTimer=null,pmTimer=null;
 let highConfWinRate=null;
+let pmLastUpdated=null;
 
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -609,11 +610,46 @@ function setStatus(type,state,text){
 }
 function saveAndLoad(){const key=document.getElementById('oddsApiKey').value.trim();if(key)localStorage.setItem('oddsApiKey',key);startAutoRefresh()}
 function manualRefresh(){loadOdds();loadScores();loadStatsFromServer()}
+
+// Polymarket 單獨更新（30分鐘）
+async function refreshPolymarket(){
+  pmOdds={};
+  try{
+    const res=await fetch(`${BACKEND}/api/polymarket`);
+    const data=await res.json();
+    if(data.status==='ok'){
+      for(const [name,info] of Object.entries(data.odds||{})){
+        pmOdds[name]=info;
+      }
+      pmLastUpdated=new Date();
+      // 更新頁面上的時間顯示
+      updateAutoInfo();
+      // 如果已有賽程資料，重新渲染卡片
+      if(allGames.length>0) renderGames();
+      console.log(`✅ Polymarket 更新 ${data.markets} 場，${new Date().toLocaleTimeString('zh-TW')}`);
+    }
+  }catch(e){ console.log('Polymarket 更新失敗',e) }
+}
+
+function updateAutoInfo(){
+  const now=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  const pmTime=pmLastUpdated?pmLastUpdated.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'—';
+  document.getElementById('autoInfo').textContent=`⏱ ${now} · 🟣 PM ${pmTime}`;
+}
+
 function startAutoRefresh(){
   loadOdds();loadScores();loadStatsFromServer();
-  if(oddsTimer)clearInterval(oddsTimer);if(scoreTimer)clearInterval(scoreTimer);
-  oddsTimer=setInterval(loadOdds,2*60*60*1000);scoreTimer=setInterval(loadScores,5*60*1000);
-  setInterval(()=>{document.getElementById('autoInfo').textContent='⏱ '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})},30*1000);
+  if(oddsTimer)clearInterval(oddsTimer);
+  if(scoreTimer)clearInterval(scoreTimer);
+  if(pmTimer)clearInterval(pmTimer);
+  // 賠率每2小時
+  oddsTimer=setInterval(loadOdds,2*60*60*1000);
+  // 比分每5分鐘
+  scoreTimer=setInterval(loadScores,5*60*1000);
+  // Polymarket 每30分鐘單獨更新
+  pmTimer=setInterval(refreshPolymarket,30*60*1000);
+  // 時鐘每30秒更新
+  setInterval(updateAutoInfo,30*1000);
 }
 
 async function loadStatsFromServer(){
