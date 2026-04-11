@@ -1246,7 +1246,9 @@ function renderHist(){
     <td><div class="conf-bar-wrap"><div class="conf-bar" style="width:${bw}px"></div><span class="conf-num">${h.confidence}%</span></div></td>
     <td style="font-weight:600">${zh(h.predicted_winner).slice(-2)}</td>
     <td>${h.actual_winner?zh(h.actual_winner).slice(-2):'—'}</td>
-    <td style="color:var(--text3);font-family:'JetBrains Mono',monospace">${h.actual_home_score!=null?`${h.actual_home_score}-${h.actual_away_score}`:'—'}</td>
+    <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px">${h.actual_home_score!=null?
+      `客 ${h.actual_away_score} : 主 ${h.actual_home_score}`
+      :'—'}</td>
     <td style="font-size:11px;color:var(--text3)">${h.bet_type||'—'}</td>
     <td>${h.result===true?'<span class="result-ok">✓</span>':h.result===false?'<span class="result-ng">✗</span>':'<span style="color:var(--text3)">待定</span>'}</td>`;
     tbody.appendChild(tr);
