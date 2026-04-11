@@ -885,7 +885,7 @@ function processOdds(oddsData){
     const statusText=isLive?`第${ev.status.period}節 ${ev.status.displayClock}`:isFinal?'終場':ev.status.type.shortDetail||'未開始';
     const st=new Date(ev.date);
     const tw=new Date(st.getTime()+8*3600000);
-    const timeStr=`${tw.getMonth()+1}/${tw.getDate()} ${String(tw.getHours()).padStart(2,'0')}:${String(tw.getMinutes()).padStart(2,'0')} CST`;
+    const timeStr=`${tw.getMonth()+1}/${tw.getDate()} ${String(tw.getHours()).padStart(2,'0')}:${String(tw.getMinutes()).padStart(2,'0')} 台灣時間`;
 
     // 嘗試找 Odds API 對應資料
     const oddsKey=`${hEn}|${aEn}`;
@@ -959,7 +959,7 @@ function processOdds(oddsData){
     const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const st=new Date(game.commence_time);
     const tw=new Date(st.getTime()+8*3600000);
-    const timeStr=`${tw.getMonth()+1}/${tw.getDate()} ${String(tw.getHours()).padStart(2,'0')}:${String(tw.getMinutes()).padStart(2,'0')} CST`;
+    const timeStr=`${tw.getMonth()+1}/${tw.getDate()} ${String(tw.getHours()).padStart(2,'0')}:${String(tw.getMinutes()).padStart(2,'0')} 台灣時間`;
     games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1,status:'pre',isFinal:false,isLive:false,statusText:'未開始',hScore:0,aScore:0,actualWinner:null,predCorrect:null});
   }
 
@@ -1175,7 +1175,10 @@ function renderScores(events){
     const home=comp.competitors.find(c=>c.homeAway==='home');const away=comp.competitors.find(c=>c.homeAway==='away');
     const homeWin=isFinal&&parseInt(home?.score||0)>parseInt(away?.score||0);
     const awayWin=isFinal&&parseInt(away?.score||0)>parseInt(home?.score||0);
-    const statusText=isLive?`第${ev.status.period}節 ${ev.status.displayClock}`:isFinal?'終場':st.shortDetail||'未開始';
+    const gameDate=new Date(ev.date);
+    const twTime=new Date(gameDate.getTime()+8*3600000);
+    const twTimeStr=`${twTime.getMonth()+1}/${twTime.getDate()} ${String(twTime.getHours()).padStart(2,'0')}:${String(twTime.getMinutes()).padStart(2,'0')} 台灣時間`;
+    const statusText=isLive?`第${ev.status.period}節 ${ev.status.displayClock}`:isFinal?'終場':twTimeStr;
     const card=document.createElement('div');card.className=`score-card${isLive?' live-game':''}`;
     card.innerHTML=`<div class="game-status ${isLive?'live':isFinal?'final':'pre'}">${statusText}</div>
     <div class="score-divider"></div>
