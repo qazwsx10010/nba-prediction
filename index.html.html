@@ -230,6 +230,37 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 .error-state{background:var(--red2);border:1px solid rgba(212,48,80,0.25);border-radius:10px;padding:1.5rem;text-align:center;color:var(--red);margin:2rem 0;font-weight:500}
 .show-more-btn{display:block;width:100%;padding:10px;margin-top:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:500}
 
+
+/* 串關計算機 */
+.parlay-section{background:linear-gradient(135deg,#0d1f0d,#1a3a1a);border-radius:14px;padding:20px;margin-bottom:1.25rem;border:1px solid rgba(10,158,110,0.3);display:none}
+.parlay-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.parlay-badge{background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.parlay-title{font-size:15px;font-weight:700;color:#fff}
+.parlay-subtitle{font-size:12px;color:rgba(255,255,255,0.5)}
+.parlay-picks-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.parlay-pick-item{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.parlay-pick-info{flex:1}
+.parlay-pick-team{font-size:13px;font-weight:700;color:#fff}
+.parlay-pick-detail{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px}
+.parlay-pick-odds{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#7ee8c8;white-space:nowrap}
+.parlay-pick-remove{background:rgba(255,100,100,0.2);border:none;color:rgba(255,100,100,0.8);width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.parlay-result{background:rgba(255,255,255,0.06);border-radius:12px;padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.parlay-stat{text-align:center}
+.parlay-stat-label{font-size:10px;color:rgba(255,255,255,0.45);margin-bottom:4px}
+.parlay-stat-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#7ee8c8}
+.parlay-stat-sub{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
+.parlay-bet-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.parlay-bet-label{font-size:12px;color:rgba(255,255,255,0.6)}
+.parlay-bet-input{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 12px;border-radius:8px;font-size:14px;font-family:'JetBrains Mono',monospace;width:100px;text-align:center}
+.parlay-bet-input:focus{outline:none;border-color:var(--green)}
+.parlay-payout-info{background:rgba(10,158,110,0.2);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.parlay-payout-label{font-size:11px;color:rgba(255,255,255,0.6)}
+.parlay-payout-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:#7ee8c8}
+.parlay-empty{text-align:center;color:rgba(255,255,255,0.3);padding:1.5rem;font-size:13px;line-height:1.6}
+.parlay-hint{font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-top:6px}
+.add-parlay-btn{font-size:10px;background:rgba(10,158,110,0.2);border:1px solid rgba(10,158,110,0.4);color:#7ee8c8;padding:3px 8px;border-radius:10px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:600;white-space:nowrap}
+.add-parlay-btn:hover{background:rgba(10,158,110,0.4)}
+
 /* 歷史預測卡片 */
 .pred-hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
 .pred-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;overflow:hidden}
@@ -302,6 +333,40 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
         <div class="ai-subtitle" id="aiWinRateText">信心度 &gt;70%</div>
       </div>
       <div class="ai-picks" id="aiPicks"></div>
+    </div>
+
+    <!-- 串關計算機 -->
+    <div class="parlay-section" id="parlaySection">
+      <div class="parlay-header">
+        <div class="parlay-badge">🎯 串關</div>
+        <div class="parlay-title">串關計算機</div>
+        <div class="parlay-subtitle" id="parlaySubtitle">從下方比賽卡片點「+串關」加入</div>
+      </div>
+      <div class="parlay-picks-list" id="parlayPicks">
+        <div class="parlay-empty">尚未加入任何場次<br>點擊比賽卡片下方的「＋加入串關」按鈕</div>
+      </div>
+      <div class="parlay-result" id="parlayResult" style="display:none">
+        <div class="parlay-stat"><div class="parlay-stat-label">串關總賠率</div><div class="parlay-stat-val" id="parlayTotalOdds">—</div><div class="parlay-stat-sub">累計賠率</div></div>
+        <div class="parlay-stat"><div class="parlay-stat-label">期望值</div><div class="parlay-stat-val" id="parlayEV">—</div><div class="parlay-stat-sub">每 100 元</div></div>
+        <div class="parlay-stat"><div class="parlay-stat-label">全中機率</div><div class="parlay-stat-val" id="parlayWinProb">—</div><div class="parlay-stat-sub">預估</div></div>
+      </div>
+      <div id="parlayBetSection" style="display:none">
+        <div class="parlay-bet-row">
+          <div class="parlay-bet-label">下注金額（元）：</div>
+          <input class="parlay-bet-input" type="number" id="parlayBetAmount" value="100" min="1" oninput="updateParlayBet()">
+        </div>
+        <div class="parlay-payout-info">
+          <div>
+            <div class="parlay-payout-label">預期獲利（全中）</div>
+            <div class="parlay-payout-val" id="parlayPayout">—</div>
+          </div>
+          <div style="text-align:right">
+            <div class="parlay-payout-label">淨賺</div>
+            <div class="parlay-payout-val" id="parlayProfit">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="parlay-hint">⚠️ 串關風險較高，建議下注金額不超過單場的 30%</div>
     </div>
     <div class="stats-row">
       <div class="stat-card"><div class="stat-label">今日場次</div><div class="stat-val" id="statGames">—</div><div class="stat-sub">NBA 賽程</div></div>
@@ -512,7 +577,83 @@ function getPMProb(teamEn){
   };
 }
 
-let allGames=[],currentFilter='all',currentSort='ev';
+// ── 串關計算機
+let parlayPicks=[];
+
+function addToParlay(teamEn, teamZH, betType, odds, conf, ev){
+  // 檢查是否已加入
+  if(parlayPicks.find(p=>p.teamEn===teamEn)){
+    alert(`${teamZH} 已在串關名單中！`);
+    return;
+  }
+  if(parlayPicks.length>=8){
+    alert('串關最多8場！');
+    return;
+  }
+  parlayPicks.push({teamEn, teamZH, betType, odds: parseFloat(odds), conf, ev: parseFloat(ev)});
+  renderParlay();
+  // 滾動到串關區塊
+  document.getElementById('parlaySection').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function removeFromParlay(teamEn){
+  parlayPicks=parlayPicks.filter(p=>p.teamEn!==teamEn);
+  renderParlay();
+}
+
+function renderParlay(){
+  const section=document.getElementById('parlaySection');
+  const list=document.getElementById('parlayPicks');
+  const result=document.getElementById('parlayResult');
+  const betSection=document.getElementById('parlayBetSection');
+
+  section.style.display='block';
+
+  if(!parlayPicks.length){
+    list.innerHTML='<div class="parlay-empty">尚未加入任何場次<br>點擊比賽卡片下方的「＋加入串關」按鈕</div>';
+    result.style.display='none';
+    betSection.style.display='none';
+    document.getElementById('parlaySubtitle').textContent='從下方比賽卡片點「+串關」加入';
+    return;
+  }
+
+  // 渲染串關名單
+  list.innerHTML=parlayPicks.map(p=>`
+    <div class="parlay-pick-item">
+      <div class="parlay-pick-info">
+        <div class="parlay-pick-team">${p.teamZH}</div>
+        <div class="parlay-pick-detail">${p.betType} · 信心度 ${p.conf}% · EV ${p.ev>=0?'+':''}${p.ev}%</div>
+      </div>
+      <div class="parlay-pick-odds">×${p.odds.toFixed(2)}</div>
+      <button class="parlay-pick-remove" onclick="removeFromParlay('${p.teamEn}')">×</button>
+    </div>
+  `).join('');
+
+  // 計算串關數據
+  const totalOdds=parlayPicks.reduce((acc,p)=>acc*p.odds, 1);
+  const winProb=parlayPicks.reduce((acc,p)=>acc*(p.conf/100), 1);
+  const ev=(winProb*totalOdds-1)*100;
+  const count=parlayPicks.length;
+
+  document.getElementById('parlayTotalOdds').textContent=`×${totalOdds.toFixed(2)}`;
+  document.getElementById('parlayEV').textContent=`${ev>=0?'+':''}${ev.toFixed(1)}%`;
+  document.getElementById('parlayWinProb').textContent=`${(winProb*100).toFixed(1)}%`;
+  document.getElementById('parlaySubtitle').textContent=`${count} 場串關 · 全中機率 ${(winProb*100).toFixed(1)}%`;
+
+  result.style.display='grid';
+  betSection.style.display='block';
+  updateParlayBet();
+}
+
+function updateParlayBet(){
+  if(!parlayPicks.length) return;
+  const bet=parseFloat(document.getElementById('parlayBetAmount').value)||100;
+  const totalOdds=parlayPicks.reduce((acc,p)=>acc*p.odds, 1);
+  const payout=bet*totalOdds;
+  const profit=payout-bet;
+  document.getElementById('parlayPayout').textContent=`$${payout.toFixed(0)} 元`;
+  document.getElementById('parlayProfit').textContent=`+$${profit.toFixed(0)} 元`;
+}
 let predHistData=[],predHistFilter='all',predHistShowCount=12;
 let histData=[],histFilter='all',histShowCount=20;
 
@@ -1160,6 +1301,10 @@ function renderGames(){
         <div><div class="bet-label">最佳下注建議</div><div class="bet-val">${betZH} ${g.betType}</div></div>
         <div class="bet-right"><div class="bet-odds">賠率 ${g.betOdds?.toFixed(2)||'—'}</div><div class="bet-ev">期望值 ${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div></div>
       </div>
+      ${!g.isFinal&&!g.isLive&&g.betOdds?`
+      <button class="add-parlay-btn" style="width:100%;margin-top:6px;padding:7px;" onclick="addToParlay('${g.betTeamEn}','${betZH}','${g.betType}',${g.betOdds?.toFixed(2)||1.72},${g.conf},${g.betEV?.toFixed(1)||0})">
+        ＋ 加入串關（賠率 ${g.betOdds?.toFixed(2)||'—'}）
+      </button>`:''}
       ${!g.isFinal&&!g.isLive?(()=>{
         const now=new Date();
         const gameTime=g.startTime;
