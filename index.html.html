@@ -1121,8 +1121,9 @@ async function loadBacktest(){
   const tbody=document.getElementById('histBody');
   tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text3)"><div class="loading-spinner" style="margin:0 auto 0.5rem"></div>從後端載入...</td></tr>';
   try{
-    const [histRes,statsRes]=await Promise.all([fetch(`${BACKEND}/api/predictions/history?days=60`),fetch(`${BACKEND}/api/stats`)]);
-    histData=await histRes.json();
+    // 先抓統計
+    const statsRes=await fetch(`${BACKEND}/api/stats`);
+    if(!statsRes.ok) throw new Error(`stats API 錯誤 ${statsRes.status}`);
     const stats=await statsRes.json();
     const mn=stats.month,wk=stats.week,hc=stats.high_conf;
     document.getElementById('btTotal').textContent=mn.total?mn.rate+'%':'—';
@@ -1131,10 +1132,19 @@ async function loadBacktest(){
     document.getElementById('btWeekSub').textContent=wk.total?`${wk.wins}勝 ${wk.total-wk.wins}敗`:'尚無';
     document.getElementById('btHighConf').textContent=hc.total?hc.rate+'%':'—';
     document.getElementById('btHighConfSub').textContent=hc.total?`${hc.wins}勝 ${hc.total-hc.wins}敗`:'尚無';
+
+    // 再抓歷史紀錄
+    const histRes=await fetch(`${BACKEND}/api/predictions/history?days=60`);
+    if(!histRes.ok) throw new Error(`history API 錯誤 ${histRes.status}`);
+    histData=await histRes.json();
+
     const spread=histData.filter(h=>h.bet_type&&h.bet_type.includes('讓分')&&h.result!==null);
     document.getElementById('btSpread').textContent=spread.length?Math.round(spread.filter(h=>h.result).length/spread.length*100)+'%':'—';
     renderHist();
-  }catch(e){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">後端連線失敗</td></tr>`}
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">後端連線失敗：${e.message}</td></tr>`;
+    console.error('loadBacktest error:',e);
+  }
 }
 
 function filterHist(f,btn){
