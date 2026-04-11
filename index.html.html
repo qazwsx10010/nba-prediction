@@ -670,6 +670,12 @@ function addToParlayBtn(btn){
   addToParlay(teamEn,teamZH,betType,odds,conf,ev);
 }
 
+function addToParlayByKey(key){
+  const d=parlayGameMap[key];
+  if(!d){console.log('找不到串關資料:',key);return;}
+  addToParlay(d.teamEn,d.teamZH,d.betType,d.odds,d.conf,d.ev);
+}
+
 function addToParlay(teamEn, teamZH, betType, odds, conf, ev){
   // 檢查是否已加入
   if(parlayPicks.find(p=>p.teamEn===teamEn)){
@@ -1391,17 +1397,11 @@ function renderGames(){
         <div><div class="bet-label">最佳下注建議</div><div class="bet-val">${betZH} ${g.betType}</div></div>
         <div class="bet-right"><div class="bet-odds">賠率 ${g.betOdds?.toFixed(2)||'—'}</div><div class="bet-ev">期望值 ${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div></div>
       </div>
-      ${!g.isFinal&&!g.isLive&&g.betOdds?`
-      <button class="add-parlay-btn"
-        data-team-en="${g.betTeamEn}"
-        data-team-zh="${betZH}"
-        data-bet-type="${g.betType}"
-        data-odds="${g.betOdds?.toFixed(2)||1.72}"
-        data-conf="${g.conf}"
-        data-ev="${g.betEV?.toFixed(1)||0}"
-        onclick="addToParlayBtn(this)">
-        ＋ 加入串關（賠率 ${g.betOdds?.toFixed(2)||'—'}）
-      </button>`:''}
+      ${!g.isFinal&&!g.isLive&&g.betOdds?(()=>{
+        const pKey=g.betTeamEn.replace(/\s/g,'_');
+        parlayGameMap[pKey]={teamEn:g.betTeamEn,teamZH:betZH,betType:g.betType,odds:parseFloat(g.betOdds?.toFixed(2)||1.72),conf:g.conf,ev:parseFloat(g.betEV?.toFixed(1)||0)};
+        return `<button class="add-parlay-btn" onclick="addToParlayByKey('${pKey}')">＋ 加入串關（賠率 ${g.betOdds?.toFixed(2)||'—'}）</button>`;
+      })():''}
       ${!g.isFinal&&!g.isLive?(()=>{
         const now=new Date();
         const gameTime=g.startTime;
