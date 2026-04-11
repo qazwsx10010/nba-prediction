@@ -1013,7 +1013,8 @@ function renderGames(){
     const pmHPct=pmH?pmH.probPct:null;
     const pmVolume=pmH?pmH.volume:null;
     const pmReliable=pmH?pmH.reliable:false;
-    if(!pmH) console.log(`❌ Polymarket 找不到: ${g.hEn}，pmOdds keys:`, Object.keys(pmOdds).slice(0,5));
+    if(!pmH&&Object.keys(pmOdds).length>0) console.log(`❌ PM找不到: "${g.hEn}" → keys:`, Object.keys(pmOdds));
+    else if(Object.keys(pmOdds).length===0) console.log('⚠️ pmOdds 是空的！');
     const bkH=Math.round(g.bp*100);
     const spDiff=g.spLine!==null?(g.ms-g.spLine).toFixed(1):null;
     const h2hEV=calcEV(hP>=50?g.mp:1-g.mp,hP>=50?g.h2hH:g.h2hA);
