@@ -954,7 +954,32 @@ function renderGames(){
       <div class="bet-box ${g.betColor}">
         <div><div class="bet-label">最佳下注建議</div><div class="bet-val">${betZH} ${g.betType}</div></div>
         <div class="bet-right"><div class="bet-odds">賠率 ${g.betOdds?.toFixed(2)||'—'}</div><div class="bet-ev">期望值 ${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div></div>
-      </div>`;
+      </div>
+      ${!g.isFinal&&!g.isLive?(()=>{
+        const now=new Date();
+        const gameTime=g.startTime;
+        const diffMs=gameTime-now;
+        const diffHrs=diffMs/3600000;
+        let tipBg,tipColor,tipIcon,tipText;
+        if(diffHrs>4){
+          tipBg='rgba(139,144,168,0.08)';tipColor='var(--text3)';tipIcon='⏰';
+          tipText=`賠率尚未穩定，建議開賽前 1~2 小時再確認`;
+        } else if(diffHrs>1){
+          tipBg='rgba(10,158,110,0.08)';tipColor='var(--green)';tipIcon='✅';
+          tipText=`現在是最佳下注時機！賠率穩定，可確認後下注`;
+        } else if(diffHrs>0){
+          tipBg='rgba(184,120,0,0.08)';tipColor='var(--amber)';tipIcon='⚠️';
+          tipText=`開賽前 1 小時內，賠率可能急劇變動，謹慎下注`;
+        } else {
+          tipBg='rgba(212,48,80,0.08)';tipColor='var(--red)';tipIcon='🔴';
+          tipText=`比賽已開始或即將開始`;
+        }
+        return `<div style="background:${tipBg};border-radius:6px;padding:7px 10px;margin-top:6px;font-size:11px;color:${tipColor};display:flex;align-items:center;gap:6px">
+          <span>${tipIcon}</span>
+          <span>${tipText}</span>
+          <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;color:var(--text3)">${diffHrs>0?`距開賽 ${diffHrs>=1?Math.floor(diffHrs)+'小時':''}${Math.floor((diffHrs%1)*60)}分`:'已開始'}</span>
+        </div>`;
+      })():''}`;
     grid.appendChild(card);
   }
   container.appendChild(grid);
