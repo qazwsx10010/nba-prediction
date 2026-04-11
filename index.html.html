@@ -974,7 +974,7 @@ function processOdds(oddsData){
 }
 
 function renderAIPicks(games){
-  const picks=games.filter(g=>g.conf>=70&&g.betEV>=10).sort((a,b)=>b.betEV-a.betEV).slice(0,5);
+  const picks=games.filter(g=>g.conf>=70&&g.betEV>=10).sort((a,b)=>b.betEV-a.betEV);
   const section=document.getElementById('aiSection');const container=document.getElementById('aiPicks');
   if(!picks.length){section.style.display='none';return}
   section.style.display='block';container.innerHTML='';
