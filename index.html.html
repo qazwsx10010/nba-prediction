@@ -447,6 +447,15 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <div class="perf-card"><div class="perf-label">高信心 &gt;70%</div><div class="perf-val" id="btHighConf">—</div><div class="perf-sub" id="btHighConfSub">信心度篩選</div></div>
       <div class="perf-card"><div class="perf-label">讓分盤勝率</div><div class="perf-val warn" id="btSpread">—</div><div class="perf-sub">讓分類型場次</div></div>
     </div>
+    <!-- 讓分差值準確率分析 -->
+    <div style="margin-bottom:1.5rem">
+      <div class="section-header" style="margin-bottom:0.75rem">
+        <div class="section-title">📈 讓分差值準確率分析</div>
+        <div class="section-count" id="spreadAnalysisCount">計算中</div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:0.75rem">模型預測分差 vs 台灣/美國讓分盤口的差值，越大代表優勢越明顯</div>
+      <div id="spreadAnalysisGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px"></div>
+    </div>
     <div class="section-header"><div class="section-title">真實預測紀錄</div><div class="section-count" id="histCount">從後端載入</div></div>
     <div class="hist-filter">
       <button class="hist-filter-btn active" onclick="filterHist('all',this)">全部</button>
@@ -498,27 +507,26 @@ function calcModel(hEn,aEn,bp,pmInfo=null){
   const offP=0.5+((h.pts-a.opp)-(a.pts-h.opp))*0.012;
   const injAdj=(injPenaltyReal(aEn)-injPenaltyReal(hEn))*0.02;
   const b2bAdj=(b2bStatus[hEn]?-0.05:0)+(b2bStatus[aEn]?0.05:0);
+  // 主客場差異調整（若有主客場分開數據）
+  let haAdj=0;
+  const hSt=homeAwayStats[hEn], aSt=homeAwayStats[aEn];
+  if(hSt?.homeWinPct!=null) haAdj+=(hSt.homeWinPct-50)/100*0.05;
+  if(aSt?.awayWinPct!=null) haAdj-=(aSt.awayWinPct-50)/100*0.05;
 
   let model;
   if(pmInfo&&pmInfo.reliable){
-    // Polymarket 可信（成交量>$5000）→ 給予較高權重
-    // 調整後：博彩商40% + ELO30% + 得失分15% + Polymarket15%
-    model=eloP*0.30+offP*0.15+bp*0.40+pmInfo.prob*0.15+injAdj+b2bAdj;
+    model=eloP*0.30+offP*0.15+bp*0.40+pmInfo.prob*0.15+injAdj+b2bAdj+haAdj;
   } else if(pmInfo&&pmInfo.volume>500){
-    // Polymarket 有一點資料但不夠可信 → 低權重參考
-    model=eloP*0.35+offP*0.20+bp*0.38+pmInfo.prob*0.07+injAdj+b2bAdj;
+    model=eloP*0.35+offP*0.20+bp*0.38+pmInfo.prob*0.07+injAdj+b2bAdj+haAdj;
   } else {
-    // 無 Polymarket → 傳統模型
-    // 博彩商40% + ELO35% + 得失分20% + 固定5%
-    model=eloP*0.35+offP*0.20+bp*0.40+0.5*0.05+injAdj+b2bAdj;
+    model=eloP*0.35+offP*0.20+bp*0.40+0.5*0.05+injAdj+b2bAdj+haAdj;
   }
   return Math.max(0.05,Math.min(0.95,model));
 }
 
-// ── 載入真實傷兵 + B2B + Polymarket
+// ── 載入真實傷兵 + B2B + Polymarket + 主客場
 async function loadRealTimeData(){
   try{
-    // 傷兵和B2B同時抓
     const [injRes,b2bRes]=await Promise.all([
       fetch(`${BACKEND}/api/injuries`),
       fetch(`${BACKEND}/api/b2b`)
@@ -529,6 +537,9 @@ async function loadRealTimeData(){
     if(b2bData.status==='ok') b2bStatus=b2bData.b2b||{};
     console.log(`✅ 傷兵載入 ${Object.keys(realInjuries).length} 支球隊，B2B: ${Object.values(b2bStatus).filter(Boolean).length} 隊`);
   }catch(e){ console.log('傷兵/B2B 載入失敗',e) }
+
+  // 主客場數據
+  await loadHomeAwayStats();
 
   // Polymarket 從後端抓（解決 CORS 限制）
   try{
@@ -577,8 +588,76 @@ function getPMProb(teamEn){
   };
 }
 
-// ── 串關計算機
-let parlayPicks=[];
+// ── 主客場勝率差異（從後端 standings 抓取後存在這裡）
+let homeAwayStats={}; // {teamEn: {homeWinPct, awayWinPct}}
+
+async function loadHomeAwayStats(){
+  try{
+    const res=await fetch(`${BACKEND}/api/nba-stats`);
+    const data=await res.json();
+    if(data.status==='ok'&&data.stats){
+      // 解析主客場數據（若有）
+      for(const [team,s] of Object.entries(data.stats)){
+        if(s.home_win_pct!==undefined){
+          homeAwayStats[team]={homeWinPct:s.home_win_pct, awayWinPct:s.away_win_pct};
+        }
+      }
+      console.log(`✅ 主客場數據載入 ${Object.keys(homeAwayStats).length} 支球隊`);
+    }
+  }catch(e){ console.log('主客場數據載入失敗',e) }
+}
+
+// ── 讓分差值準確率分析
+function renderSpreadAnalysis(){
+  // 只分析有讓分且有結果的場次
+  const spreadGames=histData.filter(h=>
+    h.model_spread!=null && h.spread_line!=null && h.result!==null
+  );
+
+  if(!spreadGames.length){
+    document.getElementById('spreadAnalysisCount').textContent='資料不足';
+    document.getElementById('spreadAnalysisGrid').innerHTML=
+      '<div style="color:var(--text3);font-size:12px;padding:1rem;grid-column:1/-1">累積更多預測紀錄後將自動顯示分析</div>';
+    return;
+  }
+
+  // 依差值區間分組
+  const ranges=[
+    {label:'差值 0-3分', min:0, max:3},
+    {label:'差值 3-6分', min:3, max:6},
+    {label:'差值 6-10分', min:6, max:10},
+    {label:'差值 10-15分', min:10, max:15},
+    {label:'差值 >15分', min:15, max:999},
+  ];
+
+  const grid=document.getElementById('spreadAnalysisGrid');
+  grid.innerHTML='';
+  let totalAnalyzed=0;
+
+  ranges.forEach(range=>{
+    const games=spreadGames.filter(h=>{
+      const diff=Math.abs((h.model_spread||0)-(h.spread_line||0));
+      return diff>=range.min && diff<range.max;
+    });
+    if(!games.length) return;
+    totalAnalyzed+=games.length;
+    const wins=games.filter(h=>h.result===true).length;
+    const rate=Math.round(wins/games.length*100);
+    const color=rate>=70?'var(--green)':rate>=55?'var(--amber)':'var(--red)';
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center';
+    card.innerHTML=`
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">${range.label}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:${color}">${rate}%</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${wins}勝 ${games.length-wins}敗（${games.length}場）</div>
+      <div style="height:4px;background:var(--bg3);border-radius:2px;margin-top:8px;overflow:hidden">
+        <div style="height:100%;width:${rate}%;background:${color};border-radius:2px"></div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  document.getElementById('spreadAnalysisCount').textContent=`${totalAnalyzed} 場分析`;
+}
 let allGames=[],currentFilter='all',currentSort='ev';
 
 function addToParlay(teamEn, teamZH, betType, odds, conf, ev){
@@ -1395,6 +1474,7 @@ async function loadBacktest(){
 
     const spread=histData.filter(h=>h.bet_type&&h.bet_type.includes('讓分')&&h.result!==null);
     document.getElementById('btSpread').textContent=spread.length?Math.round(spread.filter(h=>h.result).length/spread.length*100)+'%':'—';
+    renderSpreadAnalysis();
     renderHist();
   }catch(e){
     tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">後端連線失敗：${e.message}</td></tr>`;
