@@ -467,17 +467,23 @@ async function loadRealTimeData(){
 
   // Polymarket 從後端抓（解決 CORS 限制）
   try{
+    console.log('🔄 開始抓 Polymarket...');
     const res=await fetch(`${BACKEND}/api/polymarket`);
+    console.log('📡 Polymarket HTTP status:', res.status);
     const data=await res.json();
+    console.log('📦 Polymarket 回傳:', JSON.stringify(data).slice(0,200));
     if(data.status==='ok'){
-      // 後端新格式：{"Thunder": {prob: 73.2, volume: 12500, reliable: true}}
       for(const [name,info] of Object.entries(data.odds||{})){
-        pmOdds[name]=info; // 存完整物件
+        pmOdds[name]=info;
       }
+      pmLastUpdated=new Date();
+      updateAutoInfo();
       const reliableCount=Object.values(data.odds||{}).filter(v=>v.reliable).length/2;
-      console.log(`✅ Polymarket 載入 ${data.markets} 場比賽，可信（>$5000）：${reliableCount} 場`);
+      console.log(`✅ Polymarket 載入 ${data.markets} 場比賽，可信（>$5000）：${reliableCount} 場，pmOdds keys:`, Object.keys(pmOdds));
+    } else {
+      console.log('❌ Polymarket status not ok:', data);
     }
-  }catch(e){ console.log('Polymarket 載入失敗',e) }
+  }catch(e){ console.log('❌ Polymarket 載入失敗:', e.message, e) }
 }
 
 function getPMProb(teamEn){
