@@ -449,8 +449,9 @@ function renderPredHist(){
   const wins=data.filter(h=>h.result===true).length;
   const settled=data.filter(h=>h.result!==null).length;
   const pending=data.filter(h=>h.result===null).length;
+  const winRate=settled>0?Math.round(wins/settled*100):0;
   document.getElementById('histPredCount').textContent=
-    `${data.length} 筆・${settled>0?Math.round(wins/settled*100)+'% 正確率':''}・待確認 ${pending} 場`;
+    settled>0?`${data.length} 筆・勝率 ${winRate}%（${wins}勝${settled-wins}敗）・待確認 ${pending} 場`:`${data.length} 筆・待確認 ${pending} 場`;
 
   const shown=data.slice(0,predHistShowCount);
   const container=document.getElementById('predHistContainer');
@@ -703,11 +704,22 @@ function renderTWOdds(games){
   container.appendChild(grid);
 }
 
+// ── ESPN 今日全部比賽（含已結束）
+let espnScores=[];
+async function loadESPNScores(){
+  try{
+    const res=await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard');
+    const data=await res.json();
+    espnScores=data.events||[];
+  }catch(e){espnScores=[]}
+}
+
 async function loadOdds(){
   const key=document.getElementById('oddsApiKey').value.trim()||localStorage.getItem('oddsApiKey')||'';
   if(!key)return;
   setStatus('odds','loading','賠率更新中...');
   try{
+    await loadESPNScores();
     const res=await fetch(`https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${key}&regions=us&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso`);
     if(!res.ok){const e=await res.json();throw new Error(e.message||`HTTP ${res.status}`)}
     processOdds(await res.json());
@@ -715,10 +727,77 @@ async function loadOdds(){
   }catch(e){setStatus('odds','error','錯誤: '+e.message);document.getElementById('gamesContainer').innerHTML=`<div class="error-state">❌ ${e.message}</div>`}
 }
 
-function processOdds(data){
+function processOdds(oddsData){
   const games=[];
-  for(const game of data){
+  // 先從 Odds API 抓未開打的比賽
+  const oddsMap={};
+  for(const game of oddsData){
+    const key=`${game.home_team}|${game.away_team}`;
+    oddsMap[key]=game;
+  }
+
+  // 從 ESPN 抓今日所有比賽（含已結束）
+  for(const ev of espnScores){
+    const comp=ev.competitions[0];
+    const homeC=comp.competitors.find(c=>c.homeAway==='home');
+    const awayC=comp.competitors.find(c=>c.homeAway==='away');
+    if(!homeC||!awayC) continue;
+    const hEn=homeC.team.displayName,aEn=awayC.team.displayName;
+    const hA=getAbbr(hEn),aA=getAbbr(aEn);
+    const status=ev.status.type.state;
+    const isFinal=status==='post',isLive=status==='in';
+    const hScore=parseInt(homeC.score||0),aScore=parseInt(awayC.score||0);
+    const statusText=isLive?`第${ev.status.period}節 ${ev.status.displayClock}`:isFinal?'終場':ev.status.type.shortDetail||'未開始';
+    const st=new Date(ev.date);
+    const tw=new Date(st.getTime()+8*3600000);
+    const timeStr=`${tw.getMonth()+1}/${tw.getDate()} ${String(tw.getHours()).padStart(2,'0')}:${String(tw.getMinutes()).padStart(2,'0')} CST`;
+
+    // 嘗試找 Odds API 對應資料
+    const oddsKey=`${hEn}|${aEn}`;
+    const oddGame=oddsMap[oddsKey];
+    let h2hH=null,h2hA=null,spLine=null,spH=null,spA=null,ouLine=null;
+    if(oddGame){
+      for(const bk of(oddGame.bookmakers||[])){
+        for(const mk of(bk.markets||[])){
+          if(mk.key==='h2h'){const ho=mk.outcomes.find(o=>o.name===hEn);const ao=mk.outcomes.find(o=>o.name===aEn);if(ho&&ao){h2hH=ho.price;h2hA=ao.price}}
+          if(mk.key==='spreads'){const ho=mk.outcomes.find(o=>o.name===hEn);const ao=mk.outcomes.find(o=>o.name===aEn);if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price}}
+          if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');if(ov)ouLine=ov.point}
+        }
+        break;
+      }
+    }
+    // 若無賠率，用 ELO 估算
+    const h=teamData[hA]||{elo:1400,pts:110,opp:110};
+    const a=teamData[aA]||{elo:1400,pts:110,opp:110};
+    const eloP=1/(1+Math.pow(10,-(h.elo-a.elo+70)/400));
+    const offP=0.5+((h.pts-a.opp)-(a.pts-h.opp))*0.012;
+    const bp=h2hH?((1/h2hH)/((1/h2hH)+(1/h2hA))):eloP;
+    const mp=calcModel(hA,aA,bp);
+    const ms=(mp-0.5)*28;
+    const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
+    let betTeamEn,betOdds,betEV,betType,betColor;
+    if(spLine!==null){
+      const diff=ms-spLine;
+      if(Math.abs(diff)<0.5){betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds||1.5);betType='不讓分';betColor='blue'}
+      else if(diff>0){betTeamEn=hEn;betOdds=spH||1.72;betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);betType=`讓分 ${spLine}`;betColor='green'}
+      else{betTeamEn=aEn;betOdds=spA||1.72;betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);betType=`吃分 +${Math.abs(spLine)}`;betColor='blue'}
+    }else{
+      betTeamEn=mp>=0.5?hEn:aEn;betOdds=h2hH?(mp>=0.5?h2hH:h2hA):null;
+      betEV=betOdds?calcEV(mp>=0.5?mp:1-mp,betOdds):0;betType='不讓分';betColor='blue';
+    }
+    const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
+
+    // 實際結果
+    const actualWinner=isFinal?(hScore>aScore?hEn:aEn):null;
+    const predCorrect=isFinal&&betTeamEn?(actualWinner===betTeamEn):null;
+
+    games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1,status,isFinal,isLive,statusText,hScore,aScore,actualWinner,predCorrect});
+  }
+
+  // 加入 Odds API 有但 ESPN 沒有的比賽
+  for(const game of oddsData){
     const hEn=game.home_team,aEn=game.away_team;
+    if(games.some(g=>g.hEn===hEn&&g.aEn===aEn)) continue;
     const hA=getAbbr(hEn),aA=getAbbr(aEn);
     let h2hH=null,h2hA=null,spLine=null,spH=null,spA=null,ouLine=null;
     for(const bk of(game.bookmakers||[])){
@@ -744,15 +823,17 @@ function processOdds(data){
     const st=new Date(game.commence_time);
     const tw=new Date(st.getTime()+8*3600000);
     const timeStr=`${tw.getMonth()+1}/${tw.getDate()} ${String(tw.getHours()).padStart(2,'0')}:${String(tw.getMinutes()).padStart(2,'0')} CST`;
-    games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1});
+    games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1,status:'pre',isFinal:false,isLive:false,statusText:'未開始',hScore:0,aScore:0,actualWinner:null,predCorrect:null});
   }
+
+  games.sort((a,b)=>a.startTime-b.startTime);
   allGames=games;
   document.getElementById('statGames').textContent=games.length;
   document.getElementById('statRec').textContent=games.filter(g=>g.recLevel==='rec').length;
-  const maxEV=games.length?Math.max(...games.map(g=>g.betEV)):0;
+  const maxEV=games.filter(g=>!g.isFinal).length?Math.max(...games.filter(g=>!g.isFinal).map(g=>g.betEV)):0;
   document.getElementById('statMaxEV').textContent=maxEV>0?`+${maxEV.toFixed(1)}%`:'—';
   document.getElementById('statAgree').textContent=games.filter(g=>g.agree).length;
-  renderAIPicks(games);renderGames();
+  renderAIPicks(games.filter(g=>!g.isFinal&&!g.isLive));renderGames();
 }
 
 function renderAIPicks(games){
@@ -801,8 +882,21 @@ function renderGames(){
     const favRole=homeFav?'主場':'客場',dogRole=homeFav?'客場':'主場';
     const favInj=homeFav?injH:injA,dogInj=homeFav?injA:injH;
     const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
+    // 已結束比賽顯示結果
+    const resultBanner=g.isFinal?`
+      <div style="background:${g.predCorrect?'var(--green2)':'var(--red2)'};border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:12px">
+        <span style="font-weight:600;color:${g.predCorrect?'var(--green)':'var(--red)'}">${g.predCorrect?'✓ 預測正確':'✗ 預測失敗'}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text)">${g.hScore} - ${g.aScore}</span>
+        <span style="color:var(--text2)">終場・${zh(g.actualWinner||'').slice(-2)} 勝</span>
+      </div>`:g.isLive?`
+      <div style="background:rgba(224,48,48,0.1);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:12px;border:1px solid rgba(224,48,48,0.2)">
+        <span style="font-weight:700;color:#e03030;animation:pulse 1s infinite">🔴 進行中</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--text)">${g.hScore} - ${g.aScore}</span>
+        <span style="color:var(--text2)">${g.statusText}</span>
+      </div>`:'';
     card.innerHTML=`
       <div class="card-header"><div class="card-time">${g.timeStr}</div><div class="rec-badge ${g.recLevel}">${recLabel}</div></div>
+      ${resultBanner}
       <div class="matchup-prob">
         <div class="mp-team dog" style="flex:${Math.max(dogP,20)}">
           <div class="mp-label">${dogRole}</div><div class="mp-name">${dogZH}</div>
