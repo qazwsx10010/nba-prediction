@@ -659,6 +659,7 @@ function renderSpreadAnalysis(){
   document.getElementById('spreadAnalysisCount').textContent=`${totalAnalyzed} 場分析`;
 }
 let allGames=[],currentFilter='all',currentSort='ev';
+let parlayPicks=[], parlayGameMap={};
 
 function addToParlayBtn(btn){
   const teamEn=btn.dataset.teamEn;
