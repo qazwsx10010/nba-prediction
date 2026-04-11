@@ -847,7 +847,7 @@ async function loadOdds(){
   if(!key)return;
   setStatus('odds','loading','賠率更新中...');
   try{
-    // 同時抓：ESPN比分 + 傷兵/B2B/Polymarket + Odds API
+    // 依序載入：先抓 ESPN + 傷兵/B2B/Polymarket，再抓 Odds API
     await Promise.all([loadESPNScores(), loadRealTimeData()]);
     const res=await fetch(`https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${key}&regions=us&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso`);
     if(!res.ok){const e=await res.json();throw new Error(e.message||`HTTP ${res.status}`)}
@@ -1013,6 +1013,7 @@ function renderGames(){
     const pmHPct=pmH?pmH.probPct:null;
     const pmVolume=pmH?pmH.volume:null;
     const pmReliable=pmH?pmH.reliable:false;
+    if(!pmH) console.log(`❌ Polymarket 找不到: ${g.hEn}，pmOdds keys:`, Object.keys(pmOdds).slice(0,5));
     const bkH=Math.round(g.bp*100);
     const spDiff=g.spLine!==null?(g.ms-g.spLine).toFixed(1):null;
     const h2hEV=calcEV(hP>=50?g.mp:1-g.mp,hP>=50?g.h2hH:g.h2hA);
