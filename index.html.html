@@ -425,22 +425,27 @@ function injDisplay(teamEn){
 }
 
 function calcEV(p,o){return(p*o-1)*100}
-function calcModel(hEn,aEn,bp,pmProb=null){
+function calcModel(hEn,aEn,bp,pmInfo=null){
   const hA=getAbbr(hEn),aA=getAbbr(aEn);
   const h=teamData[hA]||{elo:1400,pts:110,opp:110};
   const a=teamData[aA]||{elo:1400,pts:110,opp:110};
   const eloP=1/(1+Math.pow(10,-(h.elo-a.elo+70)/400));
   const offP=0.5+((h.pts-a.opp)-(a.pts-h.opp))*0.012;
-  // 真實傷兵調整
   const injAdj=(injPenaltyReal(aEn)-injPenaltyReal(hEn))*0.02;
-  // B2B 調整
   const b2bAdj=(b2bStatus[hEn]?-0.05:0)+(b2bStatus[aEn]?0.05:0);
-  // Polymarket 整合（若有）
+
   let model;
-  if(pmProb!==null){
-    model=eloP*0.30+offP*0.20+bp*0.25+pmProb*0.20+0.5*0.05+injAdj+b2bAdj;
+  if(pmInfo&&pmInfo.reliable){
+    // Polymarket 可信（成交量>$5000）→ 給予較高權重
+    // 調整後：博彩商40% + ELO30% + 得失分15% + Polymarket15%
+    model=eloP*0.30+offP*0.15+bp*0.40+pmInfo.prob*0.15+injAdj+b2bAdj;
+  } else if(pmInfo&&pmInfo.volume>500){
+    // Polymarket 有一點資料但不夠可信 → 低權重參考
+    model=eloP*0.35+offP*0.20+bp*0.38+pmInfo.prob*0.07+injAdj+b2bAdj;
   } else {
-    model=eloP*0.35+offP*0.25+bp*0.30+0.5*0.10+injAdj+b2bAdj;
+    // 無 Polymarket → 傳統模型
+    // 博彩商40% + ELO35% + 得失分20% + 固定5%
+    model=eloP*0.35+offP*0.20+bp*0.40+0.5*0.05+injAdj+b2bAdj;
   }
   return Math.max(0.05,Math.min(0.95,model));
 }
@@ -465,18 +470,18 @@ async function loadRealTimeData(){
     const res=await fetch(`${BACKEND}/api/polymarket`);
     const data=await res.json();
     if(data.status==='ok'){
-      // 後端回傳格式：{"Thunder": 73.2, "Suns": 26.8, ...}
-      for(const [name,prob] of Object.entries(data.odds||{})){
-        pmOdds[name]=prob/100;
+      // 後端新格式：{"Thunder": {prob: 73.2, volume: 12500, reliable: true}}
+      for(const [name,info] of Object.entries(data.odds||{})){
+        pmOdds[name]=info; // 存完整物件
       }
-      console.log(`✅ Polymarket 後端載入 ${Object.keys(pmOdds).length} 支球隊勝率`);
+      const reliableCount=Object.values(data.odds||{}).filter(v=>v.reliable).length/2;
+      console.log(`✅ Polymarket 載入 ${data.markets} 場比賽，可信（>$5000）：${reliableCount} 場`);
     }
   }catch(e){ console.log('Polymarket 載入失敗',e) }
 }
 
 function getPMProb(teamEn){
   if(!teamEn) return null;
-  // Polymarket 短名稱對照表
   const pmNameMap={
     "Atlanta Hawks":"Hawks","Boston Celtics":"Celtics","Brooklyn Nets":"Nets",
     "Charlotte Hornets":"Hornets","Chicago Bulls":"Bulls","Cleveland Cavaliers":"Cavaliers",
@@ -490,12 +495,15 @@ function getPMProb(teamEn){
     "Toronto Raptors":"Raptors","Utah Jazz":"Jazz","Washington Wizards":"Wizards",
   };
   const shortName=pmNameMap[teamEn];
-  if(shortName&&pmOdds[shortName]!==undefined) return pmOdds[shortName];
-  // 備用：直接匹配或最後一個字
-  if(pmOdds[teamEn]!==undefined) return pmOdds[teamEn];
-  const lastName=teamEn.split(' ').pop();
-  if(pmOdds[lastName]!==undefined) return pmOdds[lastName];
-  return null;
+  const info=shortName?pmOdds[shortName]:null;
+  if(!info) return null;
+  // 回傳完整資訊
+  return {
+    prob: info.prob/100,       // 0~1 的機率
+    probPct: info.prob,        // 百分比顯示用
+    volume: info.volume,       // 成交量 USDC
+    reliable: info.reliable,   // 是否可信（>$5000）
+  };
 }
 
 let allGames=[],currentFilter='all',currentSort='ev';
@@ -857,8 +865,8 @@ function processOdds(oddsData){
     const eloP=1/(1+Math.pow(10,-(h.elo-a.elo+70)/400));
     const offP=0.5+((h.pts-a.opp)-(a.pts-h.opp))*0.012;
     const bp=h2hH?((1/h2hH)/((1/h2hH)+(1/h2hA))):eloP;
-    const pmProb=getPMProb(hEn);
-    const mp=calcModel(hEn,aEn,bp,pmProb);
+    const pmInfo=getPMProb(hEn);
+    const mp=calcModel(hEn,aEn,bp,pmInfo);
     const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
     let betTeamEn,betOdds,betEV,betType,betColor;
@@ -896,8 +904,8 @@ function processOdds(oddsData){
     }
     if(!h2hH)continue;
     const bp=(1/h2hH)/((1/h2hH)+(1/h2hA));
-    const pmProb=getPMProb(hEn);
-    const mp=calcModel(hEn,aEn,bp,pmProb);const ms=(mp-0.5)*28;
+    const pmInfo=getPMProb(hEn);
+    const mp=calcModel(hEn,aEn,bp,pmInfo);const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
     let betTeamEn,betOdds,betEV,betType,betColor;
     if(spLine!==null){
@@ -966,7 +974,9 @@ function renderGames(){
     const aB2B=b2bStatus[g.aEn]||false;
     // Polymarket 勝率
     const pmH=getPMProb(g.hEn);
-    const pmHPct=pmH?Math.round(pmH*100):null;
+    const pmHPct=pmH?pmH.probPct:null;
+    const pmVolume=pmH?pmH.volume:null;
+    const pmReliable=pmH?pmH.reliable:false;
     const bkH=Math.round(g.bp*100);
     const spDiff=g.spLine!==null?(g.ms-g.spLine).toFixed(1):null;
     const h2hEV=calcEV(hP>=50?g.mp:1-g.mp,hP>=50?g.h2hH:g.h2hA);
@@ -1036,7 +1046,11 @@ function renderGames(){
       </div>
       <div class="data-rows">
         <div class="data-row"><span class="dr-label">博彩商隱含勝率</span><span class="dr-val b">${hZH.slice(-2)} ${bkH}% / ${aZH.slice(-2)} ${100-bkH}%</span></div>
-        ${pmHPct!==null?`<div class="data-row"><span class="dr-label">🟣 Polymarket 勝率</span><span class="dr-val" style="color:#6c3fc5">${hZH.slice(-2)} ${pmHPct}% / ${aZH.slice(-2)} ${100-pmHPct}%</span></div>`:''}
+        ${pmHPct!==null?`<div class="data-row"><span class="dr-label">🟣 Polymarket 勝率${pmReliable?'':' ⚠️低流動性'}</span><span class="dr-val" style="color:${pmReliable?'#6c3fc5':'var(--amber)'}">
+          ${zh(g.hEn).slice(-2)} ${pmHPct}% / ${zh(g.aEn).slice(-2)} ${(100-pmHPct).toFixed(1)}%
+          <span style="font-size:10px;color:var(--text3);margin-left:4px">成交量 $${pmVolume?.toLocaleString()||'—'}</span>
+        </span></div>`:''}
+        ${pmHPct!==null&&!pmReliable?`<div class="data-row"><span class="dr-label" style="color:var(--amber)">⚠️ Polymarket 提示</span><span style="font-size:11px;color:var(--amber)">成交量不足 $5,000，僅供參考，不納入主要計算</span></div>`:''}
         <div class="data-row"><span class="dr-label">ELO 評分</span><span class="dr-val">${aZH.slice(-2)} ${teamData[g.aA]?.elo||'—'} / ${hZH.slice(-2)} ${teamData[g.hA]?.elo||'—'}</span></div>
         ${hB2B||aB2B?`<div class="data-row"><span class="dr-label">背靠背</span><span class="dr-val r">${hB2B?hZH.slice(-2)+' 昨天有比賽':''}${hB2B&&aB2B?' / ':''}${aB2B?aZH.slice(-2)+' 昨天有比賽':''}</span></div>`:''}
         <div class="data-row"><span class="dr-label">模型預測分差</span><span class="dr-val ${g.ms>=0?'g':'r'}">${g.ms>=0?hZH.slice(-2):aZH.slice(-2)} +${Math.abs(g.ms).toFixed(1)} 分</span></div>
@@ -1047,7 +1061,13 @@ function renderGames(){
       <div class="sources" style="grid-template-columns:${pmHPct!==null?'1fr 1fr 1fr':'1fr 1fr'}">
         <div class="source-card"><div class="source-name">博彩商綜合</div><div class="source-pick">${bkH>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(bkH,100-bkH)}%</div></div>
         <div class="source-card"><div class="source-name">ELO 模型</div><div class="source-pick">${hP>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(hP,aP)}%</div><span class="source-agree ${g.agree?'yes':'no'}">${g.agree?'✅ 方向一致':'⚠️ 方向分歧'}</span></div>
-        ${pmHPct!==null?`<div class="source-card" style="border-color:rgba(108,63,197,0.3)"><div class="source-name" style="color:#6c3fc5">🟣 Polymarket</div><div class="source-pick">${pmHPct>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob" style="color:#6c3fc5">${Math.max(pmHPct,100-pmHPct)}%</div><span class="source-agree ${(pmHPct>=50)===(hP>=50)?'yes':'no'}">${(pmHPct>=50)===(hP>=50)?'✅ 同向':'⚠️ 分歧'}</span></div>`:''}</div>
+        ${pmHPct!==null?`<div class="source-card" style="border-color:${pmReliable?'rgba(108,63,197,0.3)':'rgba(184,120,0,0.3)'}">
+          <div class="source-name" style="color:${pmReliable?'#6c3fc5':'var(--amber)'}">🟣 Polymarket${pmReliable?'':' ⚠️'}</div>
+          <div class="source-pick">${pmHPct>=50?hZH.slice(-2):aZH.slice(-2)}</div>
+          <div class="source-prob" style="color:${pmReliable?'#6c3fc5':'var(--amber)'}">${Math.max(pmHPct,100-pmHPct).toFixed(1)}%</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">$${pmVolume?.toLocaleString()||'—'}</div>
+          <span class="source-agree ${(pmHPct>=50)===(hP>=50)?'yes':'no'}">${(pmHPct>=50)===(hP>=50)?'✅ 同向':'⚠️ 分歧'}</span>
+        </div>`:''}</div>
       <div class="ev-section">
         <div class="ev-title">📊 期望值（每下注 100 元）${highConfWinRate&&g.recLevel==='rec'?` · 歷史高信心勝率 ${highConfWinRate}%`:''}</div>
         <div class="ev-options">
