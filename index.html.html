@@ -891,7 +891,8 @@ function processOdds(oddsData){
     }
     if(!h2hH)continue;
     const bp=(1/h2hH)/((1/h2hH)+(1/h2hA));
-    const mp=calcModel(hA,aA,bp);const ms=(mp-0.5)*28;
+    const pmProb=getPMProb(hEn);
+    const mp=calcModel(hEn,aEn,bp,pmProb);const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
     let betTeamEn,betOdds,betEV,betType,betColor;
     if(spLine!==null){
@@ -969,7 +970,6 @@ function renderGames(){
     const favP=homeFav?hP:aP,dogP=homeFav?aP:hP;
     const favZH=homeFav?hZH:aZH,dogZH=homeFav?aZH:hZH;
     const favRole=homeFav?'主場':'客場',dogRole=homeFav?'客場':'主場';
-    const favInj=homeFav?injH:injA,dogInj=homeFav?injA:injH;
     const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
     // 已結束比賽顯示結果
     const resultBanner=g.isFinal?`
