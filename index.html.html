@@ -460,36 +460,28 @@ async function loadRealTimeData(){
     console.log(`✅ 傷兵載入 ${Object.keys(realInjuries).length} 支球隊，B2B: ${Object.values(b2bStatus).filter(Boolean).length} 隊`);
   }catch(e){ console.log('傷兵/B2B 載入失敗',e) }
 
-  // Polymarket 抓 NBA 今日賽事勝率
+  // Polymarket 從後端抓（解決 CORS 限制）
   try{
-    const res=await fetch('https://clob.polymarket.com/markets?tag_slug=nba&active=true&closed=false&limit=50&order=volume&ascending=false');
+    const res=await fetch(`${BACKEND}/api/polymarket`);
     const data=await res.json();
-    const markets=data.markets||data||[];
-    for(const m of markets){
-      // 解析主客隊
-      const q=m.question||'';
-      const tokens=m.tokens||[];
-      if(tokens.length===2&&q.includes(' vs ')){
-        const parts=q.replace(' to win?','').split(' vs ');
-        if(parts.length===2){
-          const t1=parts[0].trim(),t2=parts[1].trim();
-          const p1=parseFloat(tokens[0]?.price||0);
-          const p2=parseFloat(tokens[1]?.price||0);
-          if(p1>0&&p2>0){
-            pmOdds[t1]=p1/(p1+p2);
-            pmOdds[t2]=p2/(p1+p2);
-          }
-        }
+    if(data.status==='ok'){
+      // 後端回傳格式：{"Thunder": 73.2, "Suns": 26.8, ...}
+      for(const [name,prob] of Object.entries(data.odds||{})){
+        pmOdds[name]=prob/100;
       }
+      console.log(`✅ Polymarket 後端載入 ${Object.keys(pmOdds).length} 支球隊勝率`);
     }
-    console.log(`✅ Polymarket 載入 ${Object.keys(pmOdds).length} 支球隊勝率`);
   }catch(e){ console.log('Polymarket 載入失敗',e) }
 }
 
 function getPMProb(homeEn){
-  // 嘗試各種名稱匹配
+  if(!homeEn) return null;
+  // 直接匹配
+  if(pmOdds[homeEn]!==undefined) return pmOdds[homeEn];
+  // 用隊名最後一個字（如 Thunder、Lakers）匹配
+  const lastName=homeEn.split(' ').pop();
   for(const [k,v] of Object.entries(pmOdds)){
-    if(homeEn.includes(k)||k.includes(homeEn.split(' ').pop())) return v;
+    if(k===lastName||k.endsWith(lastName)||homeEn.includes(k)) return v;
   }
   return null;
 }
