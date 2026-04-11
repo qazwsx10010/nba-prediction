@@ -229,6 +229,30 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 @keyframes spin{to{transform:rotate(360deg)}}
 .error-state{background:var(--red2);border:1px solid rgba(212,48,80,0.25);border-radius:10px;padding:1.5rem;text-align:center;color:var(--red);margin:2rem 0;font-weight:500}
 .show-more-btn{display:block;width:100%;padding:10px;margin-top:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:500}
+
+/* 歷史預測卡片 */
+.pred-hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.pred-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;overflow:hidden}
+.pred-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.pred-card.win::before{background:var(--green)}
+.pred-card.loss::before{background:var(--red)}
+.pred-card.pending::before{background:var(--text3)}
+.pred-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.pred-date{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.pred-result-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.pred-result-badge.win{background:var(--green2);color:var(--green);border:1px solid rgba(10,158,110,0.25)}
+.pred-result-badge.loss{background:var(--red2);color:var(--red);border:1px solid rgba(212,48,80,0.25)}
+.pred-result-badge.pending{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.pred-matchup{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px}
+.pred-rows{font-size:12px}
+.pred-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bg3)}
+.pred-row:last-child{border-bottom:none}
+.pred-rl{color:var(--text2)}
+.pred-rv{font-weight:600;font-family:'JetBrains Mono',monospace;font-size:11px}
+.pred-rv.g{color:var(--green)}.pred-rv.r{color:var(--red)}.pred-rv.a{color:var(--amber)}
+.pred-conf-bar-wrap{display:flex;align-items:center;gap:6px;margin-top:8px}
+.pred-conf-bar{height:5px;border-radius:3px;background:var(--green);display:inline-block}
+.pred-conf-num{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
 @media(max-width:640px){
   .win-stats,.stats-row,.perf-stats{grid-template-columns:repeat(2,1fr)}
   .games-grid,.scores-grid,.ai-picks,.tw-games-grid{grid-template-columns:1fr}
@@ -303,6 +327,25 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <div class="section-count" id="gameCount">0 場</div>
     </div>
     <div id="gamesContainer"><div class="loading-state"><div class="loading-spinner"></div><div>請輸入 API Key 並點擊「套用並載入」</div></div></div>
+
+    <!-- 歷史預測紀錄 -->
+    <div style="margin-top:2.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="section-title">📅 歷史預測紀錄</div>
+          <div class="section-count" id="histPredCount">載入中</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="filter-btn active" onclick="filterPredHist('all',this)">全部</button>
+          <button class="filter-btn" onclick="filterPredHist('win',this)">✓ 預測正確</button>
+          <button class="filter-btn" onclick="filterPredHist('loss',this)">✗ 預測失敗</button>
+          <button class="filter-btn" onclick="filterPredHist('pending',this)">⏳ 待確認</button>
+          <button class="filter-btn" onclick="filterPredHist('high',this)">⭐ 高信心</button>
+        </div>
+      </div>
+      <div id="predHistContainer"><div class="loading-state" style="padding:2rem"><div class="loading-spinner"></div></div></div>
+      <button class="show-more-btn" id="predHistMoreBtn" onclick="showMorePredHist()" style="display:none">載入更多 ↓</button>
+    </div>
   </div>
 
   <!-- 台灣運彩分析 -->
@@ -373,7 +416,84 @@ function calcModel(hA,aA,bp){
 }
 
 let allGames=[],currentFilter='all',currentSort='ev';
-let histData=[],histFilter='all',histShowCount=20;
+let predHistData=[],predHistFilter='all',predHistShowCount=12;
+
+async function loadPredHist(){
+  try{
+    const res=await fetch(`${BACKEND}/api/predictions/history?days=90`);
+    predHistData=await res.json();
+    renderPredHist();
+  }catch(e){
+    document.getElementById('predHistContainer').innerHTML='<div class="loading-state" style="color:var(--text3);padding:1.5rem">後端連線失敗，無法載入歷史紀錄</div>';
+  }
+}
+
+function filterPredHist(f,btn){
+  predHistFilter=f;predHistShowCount=12;
+  document.querySelectorAll('#page-predict .filter-btn').forEach(b=>{
+    if(['全部','✓ 預測正確','✗ 預測失敗','⏳ 待確認','⭐ 高信心'].some(t=>b.textContent.includes(t.replace('⭐ ','').replace('✓ ','').replace('✗ ','').replace('⏳ ',''))))
+      b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  renderPredHist();
+}
+function showMorePredHist(){predHistShowCount+=12;renderPredHist()}
+
+function renderPredHist(){
+  let data=[...predHistData];
+  if(predHistFilter==='win') data=data.filter(h=>h.result===true);
+  else if(predHistFilter==='loss') data=data.filter(h=>h.result===false);
+  else if(predHistFilter==='pending') data=data.filter(h=>h.result===null);
+  else if(predHistFilter==='high') data=data.filter(h=>h.confidence>=70);
+
+  const wins=data.filter(h=>h.result===true).length;
+  const settled=data.filter(h=>h.result!==null).length;
+  const pending=data.filter(h=>h.result===null).length;
+  document.getElementById('histPredCount').textContent=
+    `${data.length} 筆・${settled>0?Math.round(wins/settled*100)+'% 正確率':''}・待確認 ${pending} 場`;
+
+  const shown=data.slice(0,predHistShowCount);
+  const container=document.getElementById('predHistContainer');
+  if(!shown.length){
+    container.innerHTML='<div class="loading-state" style="color:var(--text3);padding:1.5rem">尚無符合條件的歷史紀錄<br><span style="font-size:12px">每天早上8點自動儲存預測，比賽結束後更新結果</span></div>';
+    document.getElementById('predHistMoreBtn').style.display='none';
+    return;
+  }
+  const grid=document.createElement('div');grid.className='pred-hist-grid';
+  shown.forEach(h=>{
+    const resultClass=h.result===true?'win':h.result===false?'loss':'pending';
+    const resultLabel=h.result===true?'✓ 預測正確':h.result===false?'✗ 預測失敗':'⏳ 待確認';
+    const bw=Math.round((h.confidence-50)/50*100);
+    const homeZH=zh(h.home_team),awayZH=zh(h.away_team);
+    const predZH=zh(h.predicted_winner);
+    const actZH=h.actual_winner?zh(h.actual_winner):'—';
+    const score=h.actual_home_score!=null?`${h.actual_home_score} - ${h.actual_away_score}`:'—';
+    const card=document.createElement('div');
+    card.className=`pred-card ${resultClass}`;
+    card.innerHTML=`
+      <div class="pred-card-header">
+        <div class="pred-date">${h.game_date}</div>
+        <div class="pred-result-badge ${resultClass}">${resultLabel}</div>
+      </div>
+      <div class="pred-matchup">${awayZH.slice(-2)} @ ${homeZH.slice(-2)}</div>
+      <div class="pred-rows">
+        <div class="pred-row"><span class="pred-rl">預測勝者</span><span class="pred-rv a">${predZH}</span></div>
+        <div class="pred-row"><span class="pred-rl">下注方式</span><span class="pred-rv">${h.bet_type||'—'}</span></div>
+        <div class="pred-row"><span class="pred-rl">實際勝者</span><span class="pred-rv ${h.result===true?'g':h.result===false?'r':''}">${actZH!=='—'?actZH:actZH}</span></div>
+        <div class="pred-row"><span class="pred-rl">最終比分</span><span class="pred-rv">${score}</span></div>
+        ${h.bet_odds?`<div class="pred-row"><span class="pred-rl">賠率</span><span class="pred-rv">${parseFloat(h.bet_odds).toFixed(2)}</span></div>`:''}
+      </div>
+      <div class="pred-conf-bar-wrap">
+        <div class="pred-conf-bar" style="width:${bw}px"></div>
+        <span class="pred-conf-num">信心度 ${h.confidence}%</span>
+      </div>`;
+    grid.appendChild(card);
+  });
+  container.innerHTML='';container.appendChild(grid);
+  const btn=document.getElementById('predHistMoreBtn');
+  btn.style.display=predHistShowCount>=data.length?'none':'block';
+  if(predHistShowCount<data.length) btn.textContent=`載入更多（還有 ${data.length-predHistShowCount} 筆）↓`;
+}
 let oddsTimer=null,scoreTimer=null;
 let highConfWinRate=null;
 
@@ -814,6 +934,7 @@ function renderHist(){
 
 window.onload=()=>{
   loadStatsFromServer();
+  loadPredHist();
   const saved=localStorage.getItem('oddsApiKey');
   if(saved){document.getElementById('oddsApiKey').value=saved;startAutoRefresh()}
   else loadScores();
