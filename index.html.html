@@ -744,13 +744,41 @@ function renderTWOdds(games){
     const eloP=1/(1+Math.pow(10,-(h.elo-a.elo+70)/400));
     const offP=0.5+((h.pts-a.opp)-(a.pts-h.opp))*0.012;
     const mp=Math.max(0.05,Math.min(0.95,eloP*0.5+offP*0.4+0.5*0.1));
-    const ms=(mp-0.5)*28; // 主場視角分差
+    const ms=(mp-0.5)*28;
     const twSp=g.spread;
     const hP=Math.round(mp*100),aP=100-hP;
     const favHome=hP>=aP;
     const favZH=favHome?zh(g.home_en):zh(g.away_en);
     const dogZH=favHome?zh(g.away_en):zh(g.home_en);
     const favP=favHome?hP:aP,dogP=favHome?aP:hP;
+
+    // ── 比賽預測對照（從 allGames 找同場比賽）
+    const matchGame=allGames.find(ag=>
+      (ag.hEn===g.home_en&&ag.aEn===g.away_en)||
+      (ag.hEn===g.away_en&&ag.aEn===g.home_en)
+    );
+    let predictConf=null,predictTeamZH=null,predictRecLevel=null,predictBetType=null,predictEV=null,pmInfo=null;
+    let crossMatch=false,crossMatchText='';
+    if(matchGame){
+      predictConf=matchGame.conf;
+      predictTeamZH=zh(matchGame.betTeamEn);
+      predictRecLevel=matchGame.recLevel;
+      predictBetType=matchGame.betType;
+      predictEV=matchGame.betEV;
+      pmInfo=getPMProb(matchGame.hEn);
+
+      // 判斷台灣運彩建議和比賽預測是否方向一致
+      if(twSp!==null){
+        const diff=ms-twSp;
+        const twBetTeamEn=diff>2?g.home_en:diff<-2?g.away_en:null;
+        if(twBetTeamEn&&matchGame.betTeamEn===twBetTeamEn){
+          crossMatch=true;
+        }
+      }
+      crossMatchText=crossMatch
+        ?`✅ 與比賽預測一致！預測：${predictTeamZH}（信心度 ${predictConf}%）`
+        :`⚠️ 與比賽預測方向不同，請謹慎`;
+    }
 
     // 判斷推薦等級
     let level='obs',verdictText='',betText='',betOdds='',betEV=0,betTeamZH='',betType='';
@@ -774,21 +802,23 @@ function renderTWOdds(games){
         betEV=calcEV(0.5+Math.abs(diff)*0.02,parseFloat(betOdds||1.72));
         verdictText=`輕微優勢，差值 ${diff.toFixed(1)} 分，風險中等`;
       } else {
-        level='obs';verdictText='讓分與模型接近，無明顯優勢';betText='不建議下注';
+        level='obs';verdictText='讓分與模型接近，無明顯優勢';
       }
     } else {
       verdictText='無讓分資料';
     }
 
-    const recLabel=level==='rec'?'⭐ 推薦':level==='con'?'🔶 可考慮':'— 觀望';
+    // 如果台灣運彩推薦 + 比賽預測一致 → 升級標籤
+    const finalLevel=crossMatch&&level==='rec'?'rec':level;
+    const recLabel=crossMatch&&level==='rec'?'🏆 強力推薦':level==='rec'?'⭐ 推薦':level==='con'?'🔶 可考慮':'— 觀望';
     const isLight=level==='rec'||level==='con';
 
     const card=document.createElement('div');
-    card.className=`tw-card ${level}`;
+    card.className=`tw-card ${finalLevel}`;
     card.innerHTML=`
       <div class="tw-card-header">
         <div class="tw-time">${g.time}</div>
-        <div class="tw-rec-badge ${level}">${recLabel}</div>
+        <div class="tw-rec-badge ${finalLevel}">${recLabel}</div>
       </div>
       <div class="matchup-prob">
         <div class="mp-team dog" style="flex:${Math.max(dogP,20)}">
@@ -812,8 +842,15 @@ function renderTWOdds(games){
           ${twSp!==null?((ms-twSp>0?'+':'')+(ms-twSp).toFixed(1)+' 分'):'—'}
         </span></div>
         ${g.total?`<div class="tw-row"><span class="tw-rl">大小分盤口</span><span class="tw-rv">${g.total}（大 ${g.over_odds} / 小 ${g.under_odds}）</span></div>`:''}
+        ${pmInfo?`<div class="tw-row"><span class="tw-rl">🟣 Polymarket</span><span class="tw-rv" style="color:#6c3fc5">${zh(g.home_en).slice(-2)} ${pmInfo.probPct}% · $${pmInfo.volume?.toLocaleString()||'—'}</span></div>`:''}
         <div class="tw-row"><span class="tw-rl">ELO 評分</span><span class="tw-rv">${zh(g.away_en).slice(-2)} ${teamData[aA]?.elo||'—'} / ${zh(g.home_en).slice(-2)} ${teamData[hA]?.elo||'—'}</span></div>
       </div>
+      ${matchGame?`
+      <div style="background:${crossMatch?'var(--green2)':'var(--amber2)'};border-radius:8px;padding:9px 12px;margin-bottom:8px;border:1px solid ${crossMatch?'rgba(10,158,110,0.25)':'rgba(184,120,0,0.25)'}">
+        <div style="font-size:11px;font-weight:700;color:${crossMatch?'var(--green)':'var(--amber)'}">📊 比賽預測對照</div>
+        <div style="font-size:12px;margin-top:4px;color:var(--text2)">${crossMatchText}</div>
+        ${predictConf?`<div style="font-size:11px;color:var(--text3);margin-top:3px">信心度 ${predictConf}% · EV ${predictEV>=0?'+':''}${predictEV?.toFixed(1)}% · ${predictBetType}</div>`:''}
+      </div>`:''}
       ${level!=='obs'&&betTeamZH?`
       <div class="bet-recommend ${level}">
         <div class="bet-top">
