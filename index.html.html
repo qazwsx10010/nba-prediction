@@ -480,8 +480,8 @@ function renderPredHist(){
       <div class="pred-rows">
         <div class="pred-row"><span class="pred-rl">預測勝者</span><span class="pred-rv a">${predZH}</span></div>
         <div class="pred-row"><span class="pred-rl">下注方式</span><span class="pred-rv">${h.bet_type||'—'}</span></div>
-        <div class="pred-row"><span class="pred-rl">實際勝者</span><span class="pred-rv ${h.result===true?'g':h.result===false?'r':''}">${actZH!=='—'?actZH:actZH}</span></div>
-        <div class="pred-row"><span class="pred-rl">最終比分</span><span class="pred-rv">${score}</span></div>
+        <div class="pred-row"><span class="pred-rl">實際勝者</span><span class="pred-rv ${h.result===true?'g':h.result===false?'r':''}">${h.actual_winner?zh(h.actual_winner):'—'}</span></div>
+        <div class="pred-row"><span class="pred-rl">最終比分</span><span class="pred-rv">${h.actual_home_score!=null?`客 ${h.actual_away_score} : 主 ${h.actual_home_score}`:'待確認'}</span></div>
         ${h.bet_odds?`<div class="pred-row"><span class="pred-rl">賠率</span><span class="pred-rv">${parseFloat(h.bet_odds).toFixed(2)}</span></div>`:''}
       </div>
       <div class="pred-conf-bar-wrap">
@@ -884,15 +884,39 @@ function renderGames(){
     const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
     // 已結束比賽顯示結果
     const resultBanner=g.isFinal?`
-      <div style="background:${g.predCorrect?'var(--green2)':'var(--red2)'};border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:12px">
-        <span style="font-weight:600;color:${g.predCorrect?'var(--green)':'var(--red)'}">${g.predCorrect?'✓ 預測正確':'✗ 預測失敗'}</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text)">${g.hScore} - ${g.aScore}</span>
-        <span style="color:var(--text2)">終場・${zh(g.actualWinner||'').slice(-2)} 勝</span>
+      <div style="background:${g.predCorrect?'var(--green2)':'var(--red2)'};border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;border:1px solid ${g.predCorrect?'rgba(10,158,110,0.2)':'rgba(212,48,80,0.2)'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-weight:700;color:${g.predCorrect?'var(--green)':'var(--red)'}">${g.predCorrect?'✓ 預測正確':'✗ 預測失敗'}</span>
+          <span style="color:var(--text2);font-size:11px">終場・${zh(g.actualWinner||'').slice(-2)} 勝</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="text-align:center;flex:1">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.aEn).slice(-2)}（客）</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${g.actualWinner===g.aEn?'var(--green)':'var(--text2)'}">${g.aScore}</div>
+          </div>
+          <div style="font-size:13px;color:var(--text3);padding:0 8px">:</div>
+          <div style="text-align:center;flex:1">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.hEn).slice(-2)}（主）</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${g.actualWinner===g.hEn?'var(--green)':'var(--text2)'}">${g.hScore}</div>
+          </div>
+        </div>
       </div>`:g.isLive?`
-      <div style="background:rgba(224,48,48,0.1);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:12px;border:1px solid rgba(224,48,48,0.2)">
-        <span style="font-weight:700;color:#e03030;animation:pulse 1s infinite">🔴 進行中</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--text)">${g.hScore} - ${g.aScore}</span>
-        <span style="color:var(--text2)">${g.statusText}</span>
+      <div style="background:rgba(224,48,48,0.1);border-radius:8px;padding:8px 12px;margin-bottom:10px;border:1px solid rgba(224,48,48,0.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-weight:700;color:#e03030;animation:pulse 1s infinite">🔴 進行中</span>
+          <span style="color:var(--text2);font-size:11px">${g.statusText}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="text-align:center;flex:1">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.aEn).slice(-2)}（客）</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--text)">${g.aScore}</div>
+          </div>
+          <div style="font-size:13px;color:var(--text3);padding:0 8px">:</div>
+          <div style="text-align:center;flex:1">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.hEn).slice(-2)}（主）</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--text)">${g.hScore}</div>
+          </div>
+        </div>
       </div>`:'';
     card.innerHTML=`
       <div class="card-header"><div class="card-time">${g.timeStr}</div><div class="rec-badge ${g.recLevel}">${recLabel}</div></div>
