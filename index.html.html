@@ -970,6 +970,10 @@ function renderGames(){
     const favP=homeFav?hP:aP,dogP=homeFav?aP:hP;
     const favZH=homeFav?hZH:aZH,dogZH=homeFav?aZH:hZH;
     const favRole=homeFav?'主場':'客場',dogRole=homeFav?'客場':'主場';
+    const favInjStr=homeFav?injHStr:injAStr;
+    const dogInjStr=homeFav?injAStr:injHStr;
+    const favB2B=homeFav?hB2B:aB2B;
+    const dogB2B=homeFav?aB2B:hB2B;
     const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
     // 已結束比賽顯示結果
     const resultBanner=g.isFinal?`
@@ -1012,17 +1016,17 @@ function renderGames(){
       ${resultBanner}
       <div class="matchup-prob">
         <div class="mp-team dog" style="flex:${Math.max(dogP,20)}">
-          <div class="mp-label">${dogRole}${(favHome?aB2B:hB2B)?'<span style="font-size:9px;background:rgba(212,48,80,0.2);color:var(--red);padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
+          <div class="mp-label">${dogRole}${dogB2B?'<span style="font-size:9px;background:rgba(212,48,80,0.2);color:var(--red);padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
           <div class="mp-name">${dogZH}</div>
           <div class="mp-pct">${dogP}%</div>
-          ${(favHome?injAStr:injHStr)?`<div style="font-size:9px;color:var(--red);margin-top:2px">${favHome?injAStr:injHStr}</div>`:''}
+          ${dogInjStr?`<div style="font-size:9px;color:var(--red);margin-top:2px">${dogInjStr}</div>`:''}
         </div>
         <div class="mp-vs">VS</div>
         <div class="mp-team fav" style="flex:${Math.max(favP,30)}">
-          <div class="mp-label">${favRole}${(favHome?hB2B:aB2B)?'<span style="font-size:9px;background:rgba(212,48,80,0.3);color:#ffcccc;padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
+          <div class="mp-label">${favRole}${favB2B?'<span style="font-size:9px;background:rgba(212,48,80,0.3);color:#ffcccc;padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
           <div class="mp-name">${favZH}</div>
           <div class="mp-pct">${favP}%</div>
-          ${(favHome?injHStr:injAStr)?`<div style="font-size:9px;color:rgba(255,255,255,0.8);margin-top:2px">${favHome?injHStr:injAStr}</div>`:''}
+          ${favInjStr?`<div style="font-size:9px;color:rgba(255,255,255,0.85);margin-top:2px">${favInjStr}</div>`:''}
         </div>
       </div>
       <div class="data-rows">
