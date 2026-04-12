@@ -1228,9 +1228,23 @@ function processOdds(oddsData){
     let betTeamEn,betOdds,betEV,betType,betColor;
     if(spLine!==null){
       const diff=ms-spLine;
-      if(Math.abs(diff)<0.5){betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds||1.5);betType='不讓分';betColor='blue'}
-      else if(diff>0){betTeamEn=hEn;betOdds=spH||1.72;betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);betType=`讓分 ${spLine}`;betColor='green'}
-      else{betTeamEn=aEn;betOdds=spA||1.72;betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);betType=`吃分 +${Math.abs(spLine)}`;betColor='blue'}
+      if(Math.abs(diff)<0.5){
+        betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;
+        betEV=calcEV(mp>=0.5?mp:1-mp,betOdds||1.5);betType='不讓分';betColor='blue';
+      } else if(diff>0){
+        // 主場表現優於讓分 → 下注主場
+        betTeamEn=hEn;betOdds=spH||1.72;
+        betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);
+        betType=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;
+        betColor='green';
+      } else {
+        // 客場表現優於讓分 → 下注客場
+        betTeamEn=aEn;betOdds=spA||1.72;
+        betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);
+        const awaySpread=-spLine;
+        betType=awaySpread<0?`讓分 ${awaySpread}`:`吃分 +${awaySpread}`;
+        betColor='blue';
+      }
     }else{
       betTeamEn=mp>=0.5?hEn:aEn;betOdds=h2hH?(mp>=0.5?h2hH:h2hA):null;
       betEV=betOdds?calcEV(mp>=0.5?mp:1-mp,betOdds):0;betType='不讓分';betColor='blue';
