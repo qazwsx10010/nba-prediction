@@ -741,7 +741,30 @@ function autoOptimalGroups(){
     if(remain.length%2){s4ev+=calcEV1(remain[remain.length-1]);s4inv+=100;}
     strategies.push({name:'混合（3串+2串）',invest:s4inv,ev:s4ev,roi:Math.round(s4ev/s4inv*100),risk:'中',desc:'分散風險，均衡報酬'});
   }
-  strategies.sort(function(a,b){return b.roi-a.roi;});
+  // 計算每個策略的平均全中機率（勝率）
+  strategies.forEach(function(s){
+    // 勝率 = EV期望值反推：EV = winRate*payout - invest → winRate ≈ (ev+invest)/payout
+    // 用平均組數估算
+    var groups2=Math.floor(pool.length/2);
+    var avgWin2=Math.pow(pool.reduce(function(p,g){return p*g.conf/100;},1), 1/Math.max(pool.length,1));
+    if(s.name.indexOf('2串')>=0) s.winRate=Math.pow(avgWin2,2)*100;
+    else if(s.name.indexOf('3串')>=0) s.winRate=Math.pow(avgWin2,3)*100;
+    else if(s.name.indexOf('混合')>=0) s.winRate=Math.pow(avgWin2,2.5)*100;
+    else s.winRate=avgWin2*100;
+    s.winRate=Math.round(s.winRate);
+  });
+  // 勝率優先排序（每組全中機率）
+  // 2串1 勝率最高 → 優先
+  // 只有在場次少時才考慮3串
+  strategies.sort(function(a,b){
+    // 2串1 永遠是第一選擇（除非場次<2）
+    var a2=(a.name.indexOf('2串')>=0&&a.name.indexOf('混合')<0);
+    var b2=(b.name.indexOf('2串')>=0&&b.name.indexOf('混合')<0);
+    if(a2&&!b2) return -1;
+    if(!a2&&b2) return 1;
+    // 其餘依勝率排序
+    return b.winRate-a.winRate;
+  });
   var best=strategies[0];
 
   // ── 依最佳策略建立分組
@@ -773,7 +796,8 @@ function autoOptimalGroups(){
     var tc3=isBest?'#7ee8c8':'var(--green)';
     html+='<div style="background:'+bgColor+';border:2px solid '+bdColor+';border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">';
     html+='<div><div style="font-size:13px;font-weight:700;color:'+tc+'">'+(isBest?'⭐ ':'')+s.name+'</div>';
-    html+='<div style="font-size:11px;color:'+tc2+';margin-top:3px">'+s.desc+'</div></div>';
+    var winLabel=s.winRate?(' · 每組勝率約'+s.winRate+'%'):'';
+    html+='<div style="font-size:11px;color:'+tc2+';margin-top:3px">'+s.desc+winLabel+'</div></div>';
     html+='<div style="text-align:right;min-width:100px"><div style="font-size:11px;color:'+tc2+'">投$'+s.invest+'元</div>';
     html+='<div style="font-size:15px;font-weight:700;color:'+tc3+'">+$'+s.ev+'元</div>';
     html+='<div style="font-size:12px;color:'+tc3+'">ROI +'+s.roi+'%</div></div></div>';
@@ -782,6 +806,7 @@ function autoOptimalGroups(){
   html+='<div style="background:linear-gradient(135deg,rgba(10,158,110,0.15),rgba(26,111,212,0.1));border:1px solid rgba(10,158,110,0.4);border-radius:10px;padding:12px;margin:10px 0">';
   html+='<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">🎯 今日最佳策略：'+best.name+'</div>';
   html+='<div style="font-size:13px;color:rgba(255,255,255,0.9)">投入 <b style="color:#fff">$'+best.invest+'元</b> → 預期獲利 <b style="color:#7ee8c8">+$'+best.ev+'元</b>（報酬率 +'+best.roi+'%）</div>';
+  html+='<div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:6px">📊 策略理由：2串1每組勝率最高（約'+Math.round(Math.pow(avgConf/100,2)*100)+'%），資金曲線穩定，長期心態最好維持</div>';
   html+='<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px">'+(twN===0?'⚠️ 台灣運彩尚未開盤，請先載入台灣運彩分析':'✅ '+twN+'場已開盤 · '+(n-twN)+'場待開盤，開盤後確認盤口')+'</div></div>';
   // 分組明細
   html+='<div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 分組明細</div>';
