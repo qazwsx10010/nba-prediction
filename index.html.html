@@ -1157,13 +1157,16 @@ async function loadOdds(){
   }catch(e){setStatus('odds','error','錯誤: '+e.message);document.getElementById('gamesContainer').innerHTML=`<div class="error-state">❌ ${e.message}</div>`}
 }
 
+const TEAM_NORMALIZE={'LA Clippers':'Los Angeles Clippers','LA Lakers':'Los Angeles Lakers','GS Warriors':'Golden State Warriors'};
+function normTeam(n){return TEAM_NORMALIZE[n]||n;}
+
 function processOdds(oddsData){
   const games=[];
-  // 先從 Odds API 抓未開打的比賽
   const oddsMap={};
   for(const game of oddsData){
-    const key=`${game.home_team}|${game.away_team}`;
-    oddsMap[key]=game;
+    const hEn=normTeam(game.home_team), aEn=normTeam(game.away_team);
+    const key=`${hEn}|${aEn}`;
+    oddsMap[key]={...game, home_team:hEn, away_team:aEn};
   }
 
   // 從 ESPN 抓今日所有比賽（含已結束）
