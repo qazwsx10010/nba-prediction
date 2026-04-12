@@ -1376,7 +1376,7 @@ function processOdds(oddsData){
           if(mk.key==='spreads'){
             const ho=mk.outcomes.find(o=>normTeam(o.name)===hEn);
             const ao=mk.outcomes.find(o=>normTeam(o.name)===aEn);
-            if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price;console.log('spLine',hEn,'vs',aEn,'=',spLine);}
+            if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price}
           }
           if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');if(ov)ouLine=ov.point}
         }
@@ -1400,20 +1400,20 @@ function processOdds(oddsData){
         betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;
         betEV=calcEV(mp>=0.5?mp:1-mp,betOdds||1.5);betType='不讓分';betColor='blue';
       } else if(diff>0){
-        // 主場表現優於讓分 → 下注主場
+        // 模型認為主場值得押 → 下注主場讓分盤
         betTeamEn=hEn;betOdds=spH||1.72;
         betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);
-        // spLine<0 = 主場讓分（強隊）= 綠色；spLine>0 = 主場吃分（弱隊）= 藍色
-        if(spLine<0){betType=`讓分 ${spLine}`;betColor='green';}
-        else{betType=`吃分 +${spLine}`;betColor='blue';}
+        if(spLine<0){betType=`讓分 ${spLine}`;betColor='green';}  // 主場讓分（強）
+        else{betType=`吃分 +${spLine}`;betColor='blue';}          // 主場吃分（弱）
       } else {
-        // 客場表現優於讓分 → 下注客場
+        // 模型認為客場值得押 → 下注客場讓分盤
         betTeamEn=aEn;betOdds=spA||1.72;
         betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);
-        const awaySpread=-spLine; // 客場讓分 = 主場讓分的相反
-        // awaySpread<0 = 客場讓分（強隊）= 綠色；awaySpread>0 = 客場吃分（弱隊）= 藍色
-        if(awaySpread<0){betType=`讓分 ${awaySpread}`;betColor='green';}
-        else{betType=`吃分 +${awaySpread}`;betColor='blue';}
+        // 客場的讓分 = 主場讓分取反
+        // spLine=+13(主場吃分) → 客場讓出13分 → 客場讓分 = 綠色
+        // spLine=-13(主場讓分) → 客場吃進13分 → 客場吃分 = 藍色
+        if(spLine>0){betType=`讓分 -${spLine}`;betColor='green';}  // 客場讓分（強）
+        else{betType=`吃分 +${Math.abs(spLine)}`;betColor='blue';} // 客場吃分（弱）
       }
     }else{
       betTeamEn=mp>=0.5?hEn:aEn;betOdds=h2hH?(mp>=0.5?h2hH:h2hA):null;
