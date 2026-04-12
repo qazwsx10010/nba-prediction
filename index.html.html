@@ -1376,7 +1376,7 @@ function processOdds(oddsData){
           if(mk.key==='spreads'){
             const ho=mk.outcomes.find(o=>normTeam(o.name)===hEn);
             const ao=mk.outcomes.find(o=>normTeam(o.name)===aEn);
-            if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price}
+            if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price;console.log('spLine',hEn,'vs',aEn,'=',spLine);}
           }
           if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');if(ov)ouLine=ov.point}
         }
@@ -1403,15 +1403,17 @@ function processOdds(oddsData){
         // 主場表現優於讓分 → 下注主場
         betTeamEn=hEn;betOdds=spH||1.72;
         betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);
-        betType=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;
-        betColor='green';
+        // spLine<0 = 主場讓分（強隊）= 綠色；spLine>0 = 主場吃分（弱隊）= 藍色
+        if(spLine<0){betType=`讓分 ${spLine}`;betColor='green';}
+        else{betType=`吃分 +${spLine}`;betColor='blue';}
       } else {
         // 客場表現優於讓分 → 下注客場
         betTeamEn=aEn;betOdds=spA||1.72;
         betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);
-        const awaySpread=-spLine;
-        betType=awaySpread<0?`讓分 ${awaySpread}`:`吃分 +${awaySpread}`;
-        betColor='blue';
+        const awaySpread=-spLine; // 客場讓分 = 主場讓分的相反
+        // awaySpread<0 = 客場讓分（強隊）= 綠色；awaySpread>0 = 客場吃分（弱隊）= 藍色
+        if(awaySpread<0){betType=`讓分 ${awaySpread}`;betColor='green';}
+        else{betType=`吃分 +${awaySpread}`;betColor='blue';}
       }
     }else{
       betTeamEn=mp>=0.5?hEn:aEn;betOdds=h2hH?(mp>=0.5?h2hH:h2hA):null;
@@ -1449,8 +1451,8 @@ function processOdds(oddsData){
     if(spLine!==null){
       const diff=ms-spLine;
       if(Math.abs(diff)<0.5){betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds);betType='不讓分';betColor='blue'}
-      else if(diff>0){betTeamEn=hEn;betOdds=spH||1.72;betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);betType=`讓分 ${spLine}`;betColor='green'}
-      else{betTeamEn=aEn;betOdds=spA||1.72;betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);betType=`吃分 +${Math.abs(spLine)}`;betColor='blue'}
+      else if(diff>0){betTeamEn=hEn;betOdds=spH||1.72;betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);betType=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;betColor=betType.includes('讓分')?'green':'blue'}
+      else{betTeamEn=aEn;betOdds=spA||1.72;betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);const awSp=-spLine;betType=awSp<0?`讓分 ${awSp}`:`吃分 +${awSp}`;betColor=betType.includes('讓分')?'green':'blue'}
     }else{betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds);betType='不讓分';betColor='blue'}
     const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const st=new Date(game.commence_time);
