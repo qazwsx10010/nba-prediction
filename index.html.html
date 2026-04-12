@@ -685,6 +685,7 @@ function renderSpreadAnalysis(){
   document.getElementById('spreadAnalysisCount').textContent=`${totalAnalyzed} 場分析`;
 }
 let allGames=[],currentFilter='all',currentSort='ev';
+let frozenRecLevels={}; // key: hEn|aEn → recLevel（開打時快照，不再更新）
 let parlayPicks=[], parlayGameMap={};
 let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
 
@@ -1419,7 +1420,16 @@ function processOdds(oddsData){
       betTeamEn=mp>=0.5?hEn:aEn;betOdds=h2hH?(mp>=0.5?h2hH:h2hA):null;
       betEV=betOdds?calcEV(mp>=0.5?mp:1-mp,betOdds):0;betType='不讓分';betColor='blue';
     }
-    const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
+    const calcedRecLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
+    const freezeKey=`${hEn}|${aEn}`;
+    // 比賽開打或結束後：鎖定開打前的 recLevel（不隨即時賠率更新）
+    if(isLive||isFinal){
+      if(!(freezeKey in frozenRecLevels)) frozenRecLevels[freezeKey]=calcedRecLevel;
+    } else {
+      // 未開始：每次重算都更新快照
+      frozenRecLevels[freezeKey]=calcedRecLevel;
+    }
+    const recLevel=frozenRecLevels[freezeKey];
 
     // 實際結果
     const actualWinner=isFinal?(hScore>aScore?hEn:aEn):null;
@@ -1530,14 +1540,13 @@ function renderGames(){
     const spDiff=g.spLine!==null?(g.ms-g.spLine).toFixed(1):null;
     const h2hEV=calcEV(hP>=50?g.mp:1-g.mp,hP>=50?g.h2hH:g.h2hA);
     const recLabel=g.recLevel==='rec'?'⭐ 高信心推薦':g.recLevel==='con'?'🔶 可考慮':'— 觀望';
-    const homeFav=hP>=aP;
-    const favP=homeFav?hP:aP,dogP=homeFav?aP:hP;
-    const favZH=homeFav?hZH:aZH,dogZH=homeFav?aZH:hZH;
-    const favRole=homeFav?'主場':'客場',dogRole=homeFav?'客場':'主場';
-    const favInjStr=homeFav?injHStr:injAStr;
-    const dogInjStr=homeFav?injAStr:injHStr;
-    const favB2B=homeFav?hB2B:aB2B;
-    const dogB2B=homeFav?aB2B:hB2B;
+    // 固定「客左主右」，與分數區塊一致
+    const leftZH=aZH,rightZH=hZH;
+    const leftP=aP,rightP=hP;
+    const leftRole='客場',rightRole='主場';
+    const leftInjStr=injAStr,rightInjStr=injHStr;
+    const leftB2B=aB2B,rightB2B=hB2B;
+    const leftFav=aP>hP,rightFav=hP>=aP; // 誰是大熱門（決定綠色背景）
     const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
     // 已結束比賽顯示結果
     const resultBanner=g.isFinal?`
@@ -1579,18 +1588,18 @@ function renderGames(){
       <div class="card-header"><div class="card-time">${g.timeStr}</div><div class="rec-badge ${g.recLevel}">${recLabel}</div></div>
       ${resultBanner}
       <div class="matchup-prob">
-        <div class="mp-team dog" style="flex:${Math.max(dogP,20)}">
-          <div class="mp-label">${dogRole}${dogB2B?'<span style="font-size:9px;background:rgba(212,48,80,0.2);color:var(--red);padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
-          <div class="mp-name">${dogZH}</div>
-          <div class="mp-pct">${dogP}%</div>
-          ${dogInjStr?`<div style="font-size:9px;color:var(--red);margin-top:2px">${dogInjStr}</div>`:''}
+        <div class="mp-team ${leftFav?'fav':'dog'}" style="flex:${Math.max(leftP,20)}">
+          <div class="mp-label">${leftRole}${leftB2B?'<span style="font-size:9px;background:rgba(212,48,80,0.2);color:var(--red);padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
+          <div class="mp-name">${leftZH}</div>
+          <div class="mp-pct">${leftP}%</div>
+          ${leftInjStr?`<div style="font-size:9px;color:${leftFav?'rgba(255,255,255,0.85)':'var(--red)'};margin-top:2px">${leftInjStr}</div>`:''}
         </div>
         <div class="mp-vs">VS</div>
-        <div class="mp-team fav" style="flex:${Math.max(favP,30)}">
-          <div class="mp-label">${favRole}${favB2B?'<span style="font-size:9px;background:rgba(212,48,80,0.3);color:#ffcccc;padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
-          <div class="mp-name">${favZH}</div>
-          <div class="mp-pct">${favP}%</div>
-          ${favInjStr?`<div style="font-size:9px;color:rgba(255,255,255,0.85);margin-top:2px">${favInjStr}</div>`:''}
+        <div class="mp-team ${rightFav?'fav':'dog'}" style="flex:${Math.max(rightP,20)}">
+          <div class="mp-label">${rightRole}${rightB2B?'<span style="font-size:9px;background:rgba(212,48,80,0.3);color:#ffcccc;padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
+          <div class="mp-name">${rightZH}</div>
+          <div class="mp-pct">${rightP}%</div>
+          ${rightInjStr?`<div style="font-size:9px;color:${rightFav?'rgba(255,255,255,0.85)':'var(--red)'};margin-top:2px">${rightInjStr}</div>`:''}
         </div>
       </div>
       <div class="data-rows">
