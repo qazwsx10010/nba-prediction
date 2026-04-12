@@ -341,6 +341,9 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
         <div class="parlay-badge">🎯 串關</div>
         <div class="parlay-title">串關計算機</div>
         <div class="parlay-subtitle" id="parlaySubtitle">從下方比賽卡片點「+串關」加入</div>
+        <button onclick="autoOptimalGroups()" style="margin-left:auto;background:linear-gradient(135deg,#0a9e6e,#1a6fd4);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap">
+          🤖 自動最優分組
+        </button>
       </div>
       <div class="parlay-picks-list" id="parlayPicks">
         <div class="parlay-empty">尚未加入任何場次<br>點擊比賽卡片下方的「＋加入串關」按鈕</div>
@@ -367,6 +370,8 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
         </div>
       </div>
       <div class="parlay-hint">⚠️ 串關風險較高，建議下注金額不超過單場的 30%</div>
+      <!-- 最優分組結果 -->
+      <div id="optimalGroupsResult" style="display:none;margin-top:12px"></div>
     </div>
     <div class="stats-row">
       <div class="stat-card"><div class="stat-label">今日場次</div><div class="stat-val" id="statGames">—</div><div class="stat-sub">NBA 賽程</div></div>
@@ -681,8 +686,121 @@ function renderSpreadAnalysis(){
 }
 let allGames=[],currentFilter='all',currentSort='ev';
 let parlayPicks=[], parlayGameMap={};
+let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
 
-function addToParlayBtn(btn){
+// ── 自動最優分組（比對台灣運彩開盤）
+function autoOptimalGroups(){
+  const resultDiv=document.getElementById('optimalGroupsResult');
+
+  // 1. 取高信心場次（>70% 且 EV>10%）
+  const highConf=allGames.filter(g=>!g.isFinal&&!g.isLive&&g.conf>=70&&g.betEV>=10)
+    .sort((a,b)=>b.conf-a.conf);
+
+  if(!highConf.length){
+    resultDiv.style.display='block';
+    resultDiv.innerHTML='<div style="color:var(--amber);font-size:12px;padding:8px">⚠️ 目前無高信心場次</div>';
+    return;
+  }
+
+  // 2. 比對台灣運彩是否開盤
+  const withTW=[], withoutTW=[];
+  for(const g of highConf){
+    // 找台灣運彩對應場次（比對隊名）
+    const twMatch=twGamesData.find(tw=>
+      (tw.home_en===g.hEn&&tw.away_en===g.aEn)||
+      (tw.home_en===g.aEn&&tw.away_en===g.hEn)
+    );
+    // 有台灣運彩資料且有開讓分盤
+    if(twMatch&&twMatch.spread!==null&&twMatch.spread_home_odds){
+      withTW.push({...g, twMatch});
+    } else {
+      withoutTW.push(g);
+    }
+  }
+
+  // 3. 建立最優分組（2串1組，高配高）
+  const groups=[];
+  const pool=[...withTW,...withoutTW]; // 有台灣運彩的優先排前面
+  for(let i=0;i<pool.length;i+=2){
+    if(pool[i+1]) groups.push([pool[i],pool[i+1]]);
+    else groups.push([pool[i]]); // 奇數場單獨一組
+  }
+
+  // 4. 渲染結果
+  const totalInvest=groups.length*100;
+  let html=`
+    <div style="border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">
+        🤖 最優分組結果（共 ${groups.length} 組，建議各投 100 元）
+      </div>
+      ${withTW.length>0?`<div style="font-size:11px;color:var(--green);margin-bottom:8px">✅ 台灣運彩已開盤：${withTW.length} 場 / 未開盤：${withoutTW.length} 場</div>`:''}
+      ${withTW.length===0?`<div style="font-size:11px;color:var(--amber);margin-bottom:8px">⚠️ 台灣運彩尚未開盤，請先載入台灣運彩分析頁面</div>`:''}
+  `;
+
+  let totalEV=0;
+  groups.forEach((group,idx)=>{
+    const isTWOpen=group.every(g=>g.twMatch);
+    const g1=group[0], g2=group[1];
+    const winProb=g2?(g1.conf/100)*(g2.conf/100):(g1.conf/100);
+    const avgOdds=g2?1.82:1.72; // 串關平均賠率估算
+    const totalOdds=g2?avgOdds*avgOdds:avgOdds;
+    const ev=winProb*totalOdds*100-100;
+    totalEV+=ev;
+
+    const statusBadge=isTWOpen
+      ?'<span style="background:var(--green);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:700">✅ 台灣運彩已開</span>'
+      :'<span style="background:var(--amber);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:700">🔒 尚未開盤</span>';
+
+    html+=`
+      <div style="background:var(--bg2);border:1px solid ${isTWOpen?'rgba(10,158,110,0.4)':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--text)">第 ${idx+1} 組 ${g2?'2串1':'單注'}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${statusBadge}
+            <span style="font-size:11px;color:var(--green);font-weight:700">EV +${ev.toFixed(0)}元</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">${zh(g1.betTeamEn).slice(-2)} ${g1.betType}</span>
+            <span style="color:var(--text3)">信心 ${g1.conf}% · 賠率 ${g1.betOdds?.toFixed(2)||'—'}</span>
+          </div>
+          ${g2?`<div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">${zh(g2.betTeamEn).slice(-2)} ${g2.betType}</span>
+            <span style="color:var(--text3)">信心 ${g2.conf}% · 賠率 ${g2.betOdds?.toFixed(2)||'—'}</span>
+          </div>`:''}
+          ${g2?`<div style="font-size:11px;color:var(--text3);margin-top:4px">全中機率 ${(winProb*100).toFixed(0)}% · 估計賠率 ×${totalOdds.toFixed(2)} · 100元→${(totalOdds*100).toFixed(0)}元</div>`:''}
+          ${isTWOpen?`<div style="font-size:11px;color:var(--green);margin-top:2px">🇹🇼 台灣運彩已開盤，可直接下注</div>`:''}
+        </div>
+      </div>`;
+  });
+
+  const expectedTotal=totalEV+totalInvest;
+  html+=`
+    <div style="background:var(--green2);border:1px solid rgba(10,158,110,0.3);border-radius:10px;padding:12px;margin-top:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:12px;color:var(--text2)">總投入</div>
+          <div style="font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace">$${totalInvest} 元</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:12px;color:var(--text2)">預期獲利</div>
+          <div style="font-size:18px;font-weight:700;color:var(--green);font-family:'JetBrains Mono',monospace">+$${totalEV.toFixed(0)} 元</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:var(--text2)">報酬率</div>
+          <div style="font-size:18px;font-weight:700;color:var(--green);font-family:'JetBrains Mono',monospace">+${(totalEV/totalInvest*100).toFixed(0)}%</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  resultDiv.style.display='block';
+  resultDiv.innerHTML=html;
+
+  // 滾動到結果
+  resultDiv.scrollIntoView({behavior:'smooth',block:'start'});
+}
   const teamEn=btn.dataset.teamEn;
   const teamZH=btn.dataset.teamZh;
   const betType=btn.dataset.betType;
@@ -991,6 +1109,7 @@ async function fetchTWOdds(forceRefresh=false){
 }
 
 function renderTWOdds(games){
+  twGamesData=games; // 儲存供串關比對用
   const container=document.getElementById('twContainer');
   if(!games.length){container.innerHTML='<div class="loading-state">今日無 NBA 賽事</div>';return}
   container.innerHTML='';
