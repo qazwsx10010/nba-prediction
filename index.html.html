@@ -1311,22 +1311,16 @@ function renderGames(){
   if(currentFilter==='rec')games=games.filter(g=>g.recLevel==='rec');
   else if(currentFilter==='con')games=games.filter(g=>g.recLevel==='con');
   else if(currentFilter==='agree')games=games.filter(g=>g.agree);
-  if(currentSort==='ev')games.sort((a,b)=>{
-    // 進行中 → 未開始（按時間）→ 已結束
-    if(a.isLive!==b.isLive) return a.isLive?-1:1;
-    if(a.isFinal!==b.isFinal) return a.isFinal?1:-1;
-    return b.betEV-a.betEV;
-  });
-  else if(currentSort==='time')games.sort((a,b)=>{
-    if(a.isLive!==b.isLive) return a.isLive?-1:1;
-    if(a.isFinal!==b.isFinal) return a.isFinal?1:-1;
-    return a.startTime-b.startTime;
-  });
-  else games.sort((a,b)=>{
-    if(a.isLive!==b.isLive) return a.isLive?-1:1;
-    if(a.isFinal!==b.isFinal) return a.isFinal?1:-1;
-    return b.conf-a.conf;
-  });
+  // 分三組：進行中 / 未開始 / 已結束
+  const livG=games.filter(g=>g.isLive);
+  let preG=games.filter(g=>!g.isLive&&!g.isFinal);
+  const finG=games.filter(g=>g.isFinal);
+  // 未開始：先按時間，再依用戶選擇的次排序
+  if(currentSort==='ev') preG.sort((a,b)=>a.startTime-b.startTime||b.betEV-a.betEV);
+  else if(currentSort==='time') preG.sort((a,b)=>a.startTime-b.startTime);
+  else preG.sort((a,b)=>a.startTime-b.startTime||b.conf-a.conf);
+  finG.sort((a,b)=>b.startTime-a.startTime);
+  games=[...livG,...preG,...finG];
   document.getElementById('gameCount').textContent=`${games.length} 場`;
   if(!games.length){document.getElementById('gamesContainer').innerHTML='<div class="loading-state" style="color:var(--text3)">沒有符合條件的比賽</div>';return}
   const container=document.getElementById('gamesContainer');container.innerHTML='';
