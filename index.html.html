@@ -341,7 +341,7 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
         <div class="parlay-badge">🎯 串關</div>
         <div class="parlay-title">串關計算機</div>
         <div class="parlay-subtitle" id="parlaySubtitle">從下方比賽卡片點「+串關」加入</div>
-        <button onclick="autoOptimalGroups()" style="margin-left:auto;background:linear-gradient(135deg,#0a9e6e,#1a6fd4);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap">
+        <button onclick="autoOptimalGroups()" style="margin-left:auto;background:linear-gradient(135deg,#0a9e6e,#1a6fd4);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:sans-serif;white-space:nowrap">
           🤖 自動最優分組
         </button>
       </div>
@@ -690,115 +690,125 @@ let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
 
 // ── 自動最優分組（比對台灣運彩開盤）
 function autoOptimalGroups(){
-  const resultDiv=document.getElementById('optimalGroupsResult');
-
-  // 1. 取高信心場次（>70% 且 EV>10%）
-  const highConf=allGames.filter(g=>!g.isFinal&&!g.isLive&&g.conf>=70&&g.betEV>=10)
-    .sort((a,b)=>b.conf-a.conf);
-
-  if(!highConf.length){
+  var resultDiv=document.getElementById('optimalGroupsResult');
+  var highConf=allGames.filter(function(g){return !g.isFinal&&!g.isLive&&g.conf>=70&&g.betEV>=10;});
+  highConf.sort(function(a,b){return b.conf-a.conf;});
+  var n=highConf.length;
+  if(!n){
     resultDiv.style.display='block';
-    resultDiv.innerHTML='<div style="color:var(--amber);font-size:12px;padding:8px">⚠️ 目前無高信心場次</div>';
+    resultDiv.innerHTML='<div style="color:orange;font-size:12px;padding:8px">⚠️ 目前無高信心場次，請先載入賠率資料</div>';
     return;
   }
-
-  // 2. 比對台灣運彩是否開盤
-  const withTW=[], withoutTW=[];
-  for(const g of highConf){
-    // 找台灣運彩對應場次（比對隊名）
-    const twMatch=twGamesData.find(tw=>
-      (tw.home_en===g.hEn&&tw.away_en===g.aEn)||
-      (tw.home_en===g.aEn&&tw.away_en===g.hEn)
-    );
-    // 有台灣運彩資料且有開讓分盤
-    if(twMatch&&twMatch.spread!==null&&twMatch.spread_home_odds){
-      withTW.push({...g, twMatch});
-    } else {
-      withoutTW.push(g);
-    }
-  }
-
-  // 3. 建立最優分組（2串1組，高配高）
-  const groups=[];
-  const pool=[...withTW,...withoutTW]; // 有台灣運彩的優先排前面
-  for(let i=0;i<pool.length;i+=2){
-    if(pool[i+1]) groups.push([pool[i],pool[i+1]]);
-    else groups.push([pool[i]]); // 奇數場單獨一組
-  }
-
-  // 4. 渲染結果
-  const totalInvest=groups.length*100;
-  let html=`
-    <div style="border-top:1px solid var(--border);padding-top:12px">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">
-        🤖 最優分組結果（共 ${groups.length} 組，建議各投 100 元）
-      </div>
-      ${withTW.length>0?`<div style="font-size:11px;color:var(--green);margin-bottom:8px">✅ 台灣運彩已開盤：${withTW.length} 場 / 未開盤：${withoutTW.length} 場</div>`:''}
-      ${withTW.length===0?`<div style="font-size:11px;color:var(--amber);margin-bottom:8px">⚠️ 台灣運彩尚未開盤，請先載入台灣運彩分析頁面</div>`:''}
-  `;
-
-  let totalEV=0;
-  groups.forEach((group,idx)=>{
-    const isTWOpen=group.every(g=>g.twMatch);
-    const g1=group[0], g2=group[1];
-    const winProb=g2?(g1.conf/100)*(g2.conf/100):(g1.conf/100);
-    const avgOdds=g2?1.82:1.72; // 串關平均賠率估算
-    const totalOdds=g2?avgOdds*avgOdds:avgOdds;
-    const ev=winProb*totalOdds*100-100;
-    totalEV+=ev;
-
-    const statusBadge=isTWOpen
-      ?'<span style="background:var(--green);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:700">✅ 台灣運彩已開</span>'
-      :'<span style="background:var(--amber);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;font-weight:700">🔒 尚未開盤</span>';
-
-    html+=`
-      <div style="background:var(--bg2);border:1px solid ${isTWOpen?'rgba(10,158,110,0.4)':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:700;color:var(--text)">第 ${idx+1} 組 ${g2?'2串1':'單注'}</div>
-          <div style="display:flex;gap:6px;align-items:center">
-            ${statusBadge}
-            <span style="font-size:11px;color:var(--green);font-weight:700">EV +${ev.toFixed(0)}元</span>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <div style="display:flex;justify-content:space-between;font-size:12px">
-            <span style="color:var(--text2)">${zh(g1.betTeamEn).slice(-2)} ${g1.betType}</span>
-            <span style="color:var(--text3)">信心 ${g1.conf}% · 賠率 ${g1.betOdds?.toFixed(2)||'—'}</span>
-          </div>
-          ${g2?`<div style="display:flex;justify-content:space-between;font-size:12px">
-            <span style="color:var(--text2)">${zh(g2.betTeamEn).slice(-2)} ${g2.betType}</span>
-            <span style="color:var(--text3)">信心 ${g2.conf}% · 賠率 ${g2.betOdds?.toFixed(2)||'—'}</span>
-          </div>`:''}
-          ${g2?`<div style="font-size:11px;color:var(--text3);margin-top:4px">全中機率 ${(winProb*100).toFixed(0)}% · 估計賠率 ×${totalOdds.toFixed(2)} · 100元→${(totalOdds*100).toFixed(0)}元</div>`:''}
-          ${isTWOpen?`<div style="font-size:11px;color:var(--green);margin-top:2px">🇹🇼 台灣運彩已開盤，可直接下注</div>`:''}
-        </div>
-      </div>`;
+  // 比對台灣運彩開盤
+  var withTW=[],withoutTW=[];
+  highConf.forEach(function(g){
+    var twMatch=twGamesData.find(function(tw){return (tw.home_en===g.hEn&&tw.away_en===g.aEn)||(tw.home_en===g.aEn&&tw.away_en===g.hEn);});
+    if(twMatch&&twMatch.spread!==null&&twMatch.spread_home_odds){g._twMatch=twMatch;withTW.push(g);}
+    else withoutTW.push(g);
   });
+  var twN=withTW.length;
+  var pool=withTW.concat(withoutTW);
+  var avgConf=Math.round(highConf.reduce(function(s,g){return s+g.conf;},0)/n);
 
-  const expectedTotal=totalEV+totalInvest;
-  html+=`
-    <div style="background:var(--green2);border:1px solid rgba(10,158,110,0.3);border-radius:10px;padding:12px;margin-top:4px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:12px;color:var(--text2)">總投入</div>
-          <div style="font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace">$${totalInvest} 元</div>
-        </div>
-        <div style="text-align:center">
-          <div style="font-size:12px;color:var(--text2)">預期獲利</div>
-          <div style="font-size:18px;font-weight:700;color:var(--green);font-family:'JetBrains Mono',monospace">+$${totalEV.toFixed(0)} 元</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:12px;color:var(--text2)">報酬率</div>
-          <div style="font-size:18px;font-weight:700;color:var(--green);font-family:'JetBrains Mono',monospace">+${(totalEV/totalInvest*100).toFixed(0)}%</div>
-        </div>
-      </div>
-    </div>
-  </div>`;
+  // ── 動態策略計算
+  function calcEV2(a,b){var p=a.conf/100*b.conf/100,o=(a.betOdds||1.72)*(b.betOdds||1.72);return Math.round(p*o*100-100);}
+  function calcEV3(a,b,c){var p=a.conf/100*b.conf/100*c.conf/100,o=(a.betOdds||1.72)*(b.betOdds||1.72)*(c.betOdds||1.72);return Math.round(p*o*100-100);}
+  function calcEV1(a){return Math.round(a.conf/100*(a.betOdds||1.72)*100-100);}
 
+  var strategies=[];
+  // S1: 全部單注
+  var s1ev=pool.reduce(function(s,g){return s+calcEV1(g);},0);
+  strategies.push({name:'全部單注 x'+n,invest:n*100,ev:s1ev,roi:Math.round(s1ev/(n*100)*100),risk:'最低',desc:'最穩定，每場獨立不影響'});
+  // S2: 全部2串1
+  if(n>=2){
+    var s2ev=0,s2inv=0;
+    for(var i=0;i<Math.floor(n/2);i++){s2ev+=calcEV2(pool[i*2],pool[i*2+1]);s2inv+=100;}
+    if(n%2===1){s2ev+=calcEV1(pool[n-1]);s2inv+=100;}
+    strategies.push({name:Math.floor(n/2)+'組2串1'+(n%2?'+1單注':''),invest:s2inv,ev:s2ev,roi:Math.round(s2ev/s2inv*100),risk:'中低',desc:'CP值最高，資金效率佳'});
+  }
+  // S3: 全部3串1（場次>=3）
+  if(n>=3){
+    var s3ev=0,s3inv=0,t3=Math.floor(n/3),r3=n%3;
+    for(var i=0;i<t3;i++){s3ev+=calcEV3(pool[i*3],pool[i*3+1],pool[i*3+2]);s3inv+=100;}
+    if(r3===2){s3ev+=calcEV2(pool[t3*3],pool[t3*3+1]);s3inv+=100;}
+    else if(r3===1){s3ev+=calcEV1(pool[t3*3]);s3inv+=100;}
+    strategies.push({name:t3+'組3串1'+(r3===2?'+1組2串1':r3===1?'+1單注':''),invest:s3inv,ev:s3ev,roi:Math.round(s3ev/s3inv*100),risk:'中',desc:'賠率更高，適合場次多'});
+  }
+  // S4: 混合（場次>=6：一半3串1+一半2串1）
+  if(n>=6){
+    var half=Math.floor(n/2),s4ev=0,s4inv=0;
+    for(var i=0;i<Math.floor(half/3);i++){s4ev+=calcEV3(pool[i*3],pool[i*3+1],pool[i*3+2]);s4inv+=100;}
+    var remain=pool.slice(Math.floor(half/3)*3);
+    for(var i=0;i<Math.floor(remain.length/2);i++){s4ev+=calcEV2(remain[i*2],remain[i*2+1]);s4inv+=100;}
+    if(remain.length%2){s4ev+=calcEV1(remain[remain.length-1]);s4inv+=100;}
+    strategies.push({name:'混合（3串+2串）',invest:s4inv,ev:s4ev,roi:Math.round(s4ev/s4inv*100),risk:'中',desc:'分散風險，均衡報酬'});
+  }
+  strategies.sort(function(a,b){return b.roi-a.roi;});
+  var best=strategies[0];
+
+  // ── 依最佳策略建立分組
+  var groups=[],gsize=2;
+  if(best.name.indexOf('3串')>=0&&best.name.indexOf('混合')<0) gsize=3;
+  for(var i=0;i<pool.length;i+=gsize){
+    var grp=[];for(var j=0;j<gsize&&i+j<pool.length;j++) grp.push(pool[i+j]);
+    groups.push(grp);
+  }
+
+  // ── 渲染
+  var html='<div style="border-top:1px solid var(--border);padding-top:14px">';
+  // 今日概況
+  html+='<div style="background:var(--bg2);border-radius:10px;padding:12px;margin-bottom:12px">';
+  html+='<div style="font-size:12px;font-weight:700;margin-bottom:8px">📊 今日概況</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">';
+  html+='<div><div style="font-size:10px;color:var(--text3)">高信心場次</div><div style="font-size:24px;font-weight:700;color:var(--green)">'+n+'</div></div>';
+  html+='<div><div style="font-size:10px;color:var(--text3)">台灣已開盤</div><div style="font-size:24px;font-weight:700;color:'+(twN>0?'var(--green)':'orange')+'">'+twN+'</div></div>';
+  html+='<div><div style="font-size:10px;color:var(--text3)">平均信心</div><div style="font-size:24px;font-weight:700">'+avgConf+'%</div></div>';
+  html+='</div></div>';
+  // 策略比較
+  html+='<div style="font-size:12px;font-weight:700;margin-bottom:8px">💡 策略比較（各注100元）</div>';
+  strategies.forEach(function(s,idx){
+    var isBest=idx===0;
+    var bgColor=isBest?'rgba(10,158,110,0.12)':'var(--bg2)';
+    var bdColor=isBest?'rgba(10,158,110,0.5)':'var(--border)';
+    var txtColor=isBest?'var(--green)':'var(--text)';
+    html+='<div style="background:'+bgColor+';border:1px solid '+bdColor+';border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">';
+    html+='<div><div style="font-size:12px;font-weight:700;color:'+txtColor+'">'+(isBest?'⭐ ':'')+s.name+'</div>';
+    html+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+s.desc+'</div></div>';
+    html+='<div style="text-align:right;min-width:90px"><div style="font-size:10px;color:var(--text3)">投$'+s.invest+'元</div>';
+    html+='<div style="font-size:14px;font-weight:700;color:var(--green)">+$'+s.ev+'元</div>';
+    html+='<div style="font-size:11px;color:var(--green)">ROI +'+s.roi+'%</div></div></div>';
+  });
+  // 建議
+  html+='<div style="background:linear-gradient(135deg,rgba(10,158,110,0.15),rgba(26,111,212,0.1));border:1px solid rgba(10,158,110,0.4);border-radius:10px;padding:12px;margin:10px 0">';
+  html+='<div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:4px">🎯 今日最佳策略：'+best.name+'</div>';
+  html+='<div style="font-size:12px;color:var(--text2)">投入 <b>$'+best.invest+'元</b> → 預期獲利 <b style="color:var(--green)">+$'+best.ev+'元</b>（報酬率 +'+best.roi+'%）</div>';
+  html+='<div style="font-size:11px;color:var(--text3);margin-top:4px">'+(twN===0?'⚠️ 台灣運彩尚未開盤，請先載入台灣運彩分析':'✅ '+twN+'場已開盤 · '+(n-twN)+'場待開盤，開盤後確認盤口')+'</div></div>';
+  // 分組明細
+  html+='<div style="font-size:12px;font-weight:700;margin-bottom:8px">📋 分組明細</div>';
+  var totalInvest=groups.length*100,totalEV2=0;
+  groups.forEach(function(group,idx){
+    var isTW=group.some(function(g){return g._twMatch;});
+    var winProb=group.reduce(function(p,g){return p*g.conf/100;},1);
+    var totalOdds=group.reduce(function(p,g){return p*(g.betOdds||1.72);},1);
+    var ev=Math.round(winProb*totalOdds*100-100);
+    totalEV2+=ev;
+    html+='<div style="background:var(--bg2);border:1px solid '+(isTW?'rgba(10,158,110,0.4)':'var(--border)')+';border-radius:10px;padding:10px;margin-bottom:6px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">';
+    html+='<span style="font-size:11px;font-weight:700">第'+(idx+1)+'組 '+group.length+'串1</span>';
+    html+='<div style="font-size:10px">'+(isTW?'<span style="color:var(--green)">✅台灣已開</span>':'<span style="color:orange">🔒未開盤</span>')+'<span style="color:var(--text3);margin-left:6px">100元→'+Math.round(totalOdds*100)+'元</span></div></div>';
+    group.forEach(function(g){
+      html+='<div style="font-size:11px;color:var(--text2);padding:1px 0">▸ '+zh(g.betTeamEn).slice(-2)+' '+g.betType+' | 信心'+g.conf+'% 賠率×'+(g.betOdds?g.betOdds.toFixed(2):'1.72')+'</div>';
+    });
+    html+='<div style="font-size:10px;color:var(--text3);margin-top:3px">全中機率'+Math.round(winProb*100)+'% · EV +'+ev+'元</div></div>';
+  });
+  // 彙總
+  html+='<div style="background:var(--green2);border:1px solid rgba(10,158,110,0.3);border-radius:10px;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);text-align:center">';
+  html+='<div><div style="font-size:10px;color:var(--text2)">總投入</div><div style="font-size:18px;font-weight:700">$'+totalInvest+'</div></div>';
+  html+='<div><div style="font-size:10px;color:var(--text2)">預期獲利</div><div style="font-size:18px;font-weight:700;color:var(--green)">+$'+totalEV2+'</div></div>';
+  html+='<div><div style="font-size:10px;color:var(--text2)">ROI</div><div style="font-size:18px;font-weight:700;color:var(--green)">+'+(totalInvest?Math.round(totalEV2/totalInvest*100):0)+'%</div></div>';
+  html+='</div></div>';
   resultDiv.style.display='block';
   resultDiv.innerHTML=html;
-
-  // 滾動到結果
   resultDiv.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
