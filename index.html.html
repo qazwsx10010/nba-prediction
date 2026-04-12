@@ -1311,9 +1311,22 @@ function renderGames(){
   if(currentFilter==='rec')games=games.filter(g=>g.recLevel==='rec');
   else if(currentFilter==='con')games=games.filter(g=>g.recLevel==='con');
   else if(currentFilter==='agree')games=games.filter(g=>g.agree);
-  if(currentSort==='ev')games.sort((a,b)=>b.betEV-a.betEV);
-  else if(currentSort==='time')games.sort((a,b)=>a.startTime-b.startTime);
-  else games.sort((a,b)=>b.conf-a.conf);
+  if(currentSort==='ev')games.sort((a,b)=>{
+    // 進行中 → 未開始（按時間）→ 已結束
+    if(a.isLive!==b.isLive) return a.isLive?-1:1;
+    if(a.isFinal!==b.isFinal) return a.isFinal?1:-1;
+    return b.betEV-a.betEV;
+  });
+  else if(currentSort==='time')games.sort((a,b)=>{
+    if(a.isLive!==b.isLive) return a.isLive?-1:1;
+    if(a.isFinal!==b.isFinal) return a.isFinal?1:-1;
+    return a.startTime-b.startTime;
+  });
+  else games.sort((a,b)=>{
+    if(a.isLive!==b.isLive) return a.isLive?-1:1;
+    if(a.isFinal!==b.isFinal) return a.isFinal?1:-1;
+    return b.conf-a.conf;
+  });
   document.getElementById('gameCount').textContent=`${games.length} 場`;
   if(!games.length){document.getElementById('gamesContainer').innerHTML='<div class="loading-state" style="color:var(--text3)">沒有符合條件的比賽</div>';return}
   const container=document.getElementById('gamesContainer');container.innerHTML='';
