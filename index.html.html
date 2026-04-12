@@ -597,7 +597,8 @@ async function loadHomeAwayStats(){
     const data=await res.json();
     if(data.status==='ok'&&data.stats){
       for(const [team,s] of Object.entries(data.stats)){
-        if(s.home_win_pct!==undefined){
+        // 主客場勝率
+        if(s.home_win_pct!=null){
           homeAwayStats[team]={homeWinPct:s.home_win_pct, awayWinPct:s.away_win_pct};
         }
       }
