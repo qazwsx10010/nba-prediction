@@ -538,8 +538,8 @@ async function loadRealTimeData(){
     console.log(`✅ 傷兵載入 ${Object.keys(realInjuries).length} 支球隊，B2B: ${Object.values(b2bStatus).filter(Boolean).length} 隊`);
   }catch(e){ console.log('傷兵/B2B 載入失敗',e) }
 
-  // 主客場數據
-  await loadHomeAwayStats();
+  // 主客場數據 + 最新 teamData 同時載入
+  await Promise.all([loadHomeAwayStats(), loadTeamData()]);
 
   // Polymarket 從後端抓（解決 CORS 限制）
   try{
@@ -596,7 +596,6 @@ async function loadHomeAwayStats(){
     const res=await fetch(`${BACKEND}/api/nba-stats`);
     const data=await res.json();
     if(data.status==='ok'&&data.stats){
-      // 解析主客場數據（若有）
       for(const [team,s] of Object.entries(data.stats)){
         if(s.home_win_pct!==undefined){
           homeAwayStats[team]={homeWinPct:s.home_win_pct, awayWinPct:s.away_win_pct};
@@ -605,6 +604,26 @@ async function loadHomeAwayStats(){
       console.log(`✅ 主客場數據載入 ${Object.keys(homeAwayStats).length} 支球隊`);
     }
   }catch(e){ console.log('主客場數據載入失敗',e) }
+}
+
+// ── 從後端載入最新 teamData（ELO + 得失分）
+async function loadTeamData(){
+  try{
+    const res=await fetch(`${BACKEND}/api/team-data`);
+    const data=await res.json();
+    if(data.status==='ok'&&data.data){
+      let updated=0;
+      for(const [abbr,d] of Object.entries(data.data)){
+        if(teamData[abbr]){
+          if(d.elo) teamData[abbr].elo=d.elo;
+          if(d.pts&&d.pts>80) teamData[abbr].pts=d.pts;
+          if(d.opp&&d.opp>80) teamData[abbr].opp=d.opp;
+          updated++;
+        }
+      }
+      console.log(`✅ teamData 從後端更新 ${updated} 支球隊（ELO+得失分）`);
+    }
+  }catch(e){ console.log('teamData 載入失敗',e) }
 }
 
 // ── 讓分差值準確率分析
