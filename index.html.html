@@ -607,7 +607,7 @@ async function loadHomeAwayStats(){
   }catch(e){ console.log('主客場數據載入失敗',e) }
 }
 
-// ── 從後端載入最新 teamData（ELO + 得失分）
+// ── 從後端載入最新 teamData（ELO + 得失分 + 近期狀態）
 async function loadTeamData(){
   try{
     const res=await fetch(`${BACKEND}/api/team-data`);
@@ -619,10 +619,11 @@ async function loadTeamData(){
           if(d.elo) teamData[abbr].elo=d.elo;
           if(d.pts&&d.pts>80) teamData[abbr].pts=d.pts;
           if(d.opp&&d.opp>80) teamData[abbr].opp=d.opp;
+          if(d.recent_adj!==undefined) teamData[abbr].recent_adj=d.recent_adj;
           updated++;
         }
       }
-      console.log(`✅ teamData 從後端更新 ${updated} 支球隊（ELO+得失分）`);
+      console.log(`✅ teamData 從後端更新 ${updated} 支球隊（ELO+得失分+近期狀態）`);
     }
   }catch(e){ console.log('teamData 載入失敗',e) }
 }
@@ -1416,6 +1417,22 @@ function renderGames(){
         </span></div>`:''}
         ${pmHPct!==null&&!pmReliable?`<div class="data-row"><span class="dr-label" style="color:var(--amber)">⚠️ Polymarket 提示</span><span style="font-size:11px;color:var(--amber)">成交量不足 $5,000，僅供參考，不納入主要計算</span></div>`:''}
         <div class="data-row"><span class="dr-label">ELO 評分</span><span class="dr-val">${aZH.slice(-2)} ${teamData[g.aA]?.elo||'—'} / ${hZH.slice(-2)} ${teamData[g.hA]?.elo||'—'}</span></div>
+        ${(()=>{
+          const hAdj=teamData[g.hA]?.recent_adj;
+          const aAdj=teamData[g.aA]?.recent_adj;
+          const hSt=homeAwayStats[g.hEn];
+          const aSt=homeAwayStats[g.aEn];
+          const parts=[];
+          if(hAdj!==undefined&&hAdj!==0) parts.push(`${hZH.slice(-2)} 近況${hAdj>0?'🔥':'❄️'}${hAdj>0?'+':''}${hAdj}`);
+          if(aAdj!==undefined&&aAdj!==0) parts.push(`${aZH.slice(-2)} 近況${aAdj>0?'🔥':'❄️'}${aAdj>0?'+':''}${aAdj}`);
+          const haStr=[];
+          if(hSt?.homeWinPct) haStr.push(`${hZH.slice(-2)}主${hSt.homeWinPct}%`);
+          if(aSt?.awayWinPct) haStr.push(`${aZH.slice(-2)}客${aSt.awayWinPct}%`);
+          return `
+            ${parts.length?`<div class="data-row"><span class="dr-label">近期10場</span><span class="dr-val">${parts.join(' / ')}</span></div>`:''}
+            ${haStr.length?`<div class="data-row"><span class="dr-label">主客場勝率</span><span class="dr-val">${haStr.join(' / ')}</span></div>`:''}
+          `;
+        })()}
         ${hB2B||aB2B?`<div class="data-row"><span class="dr-label">背靠背</span><span class="dr-val r">${hB2B?hZH.slice(-2)+' 昨天有比賽':''}${hB2B&&aB2B?' / ':''}${aB2B?aZH.slice(-2)+' 昨天有比賽':''}</span></div>`:''}
         <div class="data-row"><span class="dr-label">模型預測分差</span><span class="dr-val ${g.ms>=0?'g':'r'}">${g.ms>=0?hZH.slice(-2):aZH.slice(-2)} +${Math.abs(g.ms).toFixed(1)} 分</span></div>
         ${g.spLine!==null?`<div class="data-row"><span class="dr-label">博彩讓分</span><span class="dr-val">${g.spLine<0?hZH.slice(-2)+' '+g.spLine:aZH.slice(-2)+' +'+Math.abs(g.spLine)} 分</span></div>
