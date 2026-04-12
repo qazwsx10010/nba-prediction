@@ -784,22 +784,34 @@ function autoOptimalGroups(){
   html+='<div style="font-size:12px;color:var(--text2)">投入 <b>$'+best.invest+'元</b> → 預期獲利 <b style="color:var(--green)">+$'+best.ev+'元</b>（報酬率 +'+best.roi+'%）</div>';
   html+='<div style="font-size:11px;color:var(--text3);margin-top:4px">'+(twN===0?'⚠️ 台灣運彩尚未開盤，請先載入台灣運彩分析':'✅ '+twN+'場已開盤 · '+(n-twN)+'場待開盤，開盤後確認盤口')+'</div></div>';
   // 分組明細
-  html+='<div style="font-size:12px;font-weight:700;margin-bottom:8px">📋 分組明細</div>';
-  var totalInvest=groups.length*100,totalEV2=0;
+  html+='<div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 分組明細</div>';
+  var totalInvest=0,totalEV2=0;
   groups.forEach(function(group,idx){
+    // 單場不顯示，改成等待提示
+    if(group.length===1){
+      html+='<div style="background:var(--bg3);border:1px dashed var(--border);border-radius:10px;padding:12px;margin-bottom:6px">';
+      html+='<div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:4px">⏳ 第'+(idx+1)+'組 待配對</div>';
+      html+='<div style="font-size:12px;color:var(--text2)">'+zh(group[0].betTeamEn).slice(-2)+' '+group[0].betType+' | 信心'+group[0].conf+'%</div>';
+      html+='<div style="font-size:11px;color:var(--amber);margin-top:4px">⚠️ 台灣運彩不能下單場，等其他高信心場次開盤後配對成2串1</div>';
+      html+='</div>';
+      return;
+    }
+    totalInvest+=100;
     var isTW=group.some(function(g){return g._twMatch;});
     var winProb=group.reduce(function(p,g){return p*g.conf/100;},1);
     var totalOdds=group.reduce(function(p,g){return p*(g.betOdds||1.72);},1);
     var ev=Math.round(winProb*totalOdds*100-100);
     totalEV2+=ev;
-    html+='<div style="background:var(--bg2);border:1px solid '+(isTW?'rgba(10,158,110,0.4)':'var(--border)')+';border-radius:10px;padding:10px;margin-bottom:6px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">';
-    html+='<span style="font-size:11px;font-weight:700">第'+(idx+1)+'組 '+group.length+'串1</span>';
-    html+='<div style="font-size:10px">'+(isTW?'<span style="color:var(--green)">✅台灣已開</span>':'<span style="color:orange">🔒未開盤</span>')+'<span style="color:var(--text3);margin-left:6px">100元→'+Math.round(totalOdds*100)+'元</span></div></div>';
+    var bg=isTW?'rgba(10,158,110,0.08)':'var(--bg2)';
+    var bd=isTW?'rgba(10,158,110,0.4)':'var(--border)';
+    html+='<div style="background:'+bg+';border:1px solid '+bd+';border-radius:10px;padding:12px;margin-bottom:8px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html+='<span style="font-size:13px;font-weight:700;color:var(--text)">第'+(idx+1)+'組 '+group.length+'串1</span>';
+    html+='<div>'+(isTW?'<span style="background:var(--green);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">✅ 台灣已開</span>':'<span style="background:rgba(184,120,0,0.3);color:var(--amber);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">🔒 未開盤</span>')+'<span style="font-size:12px;font-weight:700;color:var(--green);margin-left:8px">100元→'+Math.round(totalOdds*100)+'元</span></div></div>';
     group.forEach(function(g){
-      html+='<div style="font-size:11px;color:var(--text2);padding:1px 0">▸ '+zh(g.betTeamEn).slice(-2)+' '+g.betType+' | 信心'+g.conf+'% 賠率×'+(g.betOdds?g.betOdds.toFixed(2):'1.72')+'</div>';
+      html+='<div style="font-size:12px;color:var(--text);padding:3px 0;border-bottom:1px solid var(--bg3)">▸ <b>'+zh(g.betTeamEn).slice(-2)+'</b> '+g.betType+' &nbsp;<span style="color:var(--text3)">信心 <b style="color:var(--green)">'+g.conf+'%</b> · 賠率 <b>×'+(g.betOdds?g.betOdds.toFixed(2):'1.72')+'</b></span></div>';
     });
-    html+='<div style="font-size:10px;color:var(--text3);margin-top:3px">全中機率'+Math.round(winProb*100)+'% · EV +'+ev+'元</div></div>';
+    html+='<div style="font-size:12px;color:var(--text2);margin-top:6px">全中機率 <b>'+Math.round(winProb*100)+'%</b> &nbsp;·&nbsp; 預期獲利 <b style="color:var(--green)">+'+ev+'元</b></div></div>';
   });
   // 彙總
   html+='<div style="background:var(--green2);border:1px solid rgba(10,158,110,0.3);border-radius:10px;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);text-align:center">';
