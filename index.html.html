@@ -716,9 +716,7 @@ function autoOptimalGroups(){
   function calcEV1(a){return Math.round(a.conf/100*(a.betOdds||1.72)*100-100);}
 
   var strategies=[];
-  // S1: 全部單注
-  var s1ev=pool.reduce(function(s,g){return s+calcEV1(g);},0);
-  strategies.push({name:'全部單注 x'+n,invest:n*100,ev:s1ev,roi:Math.round(s1ev/(n*100)*100),risk:'最低',desc:'最穩定，每場獨立不影響'});
+  // S1: 全部單注（台灣運彩不能下單場，移除此選項）
   // S2: 全部2串1
   if(n>=2){
     var s2ev=0,s2inv=0;
@@ -768,14 +766,17 @@ function autoOptimalGroups(){
   html+='<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">💡 策略比較（各注100元）</div>';
   strategies.forEach(function(s,idx){
     var isBest=idx===0;
-    var bgColor=isBest?'rgba(10,158,110,0.12)':'var(--bg2)';
-    var bdColor=isBest?'rgba(10,158,110,0.5)':'var(--border)';
-    html+='<div style="background:'+bgColor+';border:1px solid '+bdColor+';border-radius:8px;padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">';
-    html+='<div><div style="font-size:13px;font-weight:700;color:#fff">'+(isBest?'⭐ ':'')+s.name+'</div>';
-    html+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:3px">'+s.desc+'</div></div>';
-    html+='<div style="text-align:right;min-width:100px"><div style="font-size:11px;color:rgba(255,255,255,0.7)">投$'+s.invest+'元</div>';
-    html+='<div style="font-size:15px;font-weight:700;color:#7ee8c8">+$'+s.ev+'元</div>';
-    html+='<div style="font-size:12px;color:#7ee8c8">ROI +'+s.roi+'%</div></div></div>';
+    var bgColor=isBest?'rgba(10,158,110,0.15)':'var(--bg2)';
+    var bdColor=isBest?'rgba(10,158,110,0.6)':'var(--border)';
+    var tc=isBest?'#fff':'var(--text)';
+    var tc2=isBest?'rgba(255,255,255,0.7)':'var(--text3)';
+    var tc3=isBest?'#7ee8c8':'var(--green)';
+    html+='<div style="background:'+bgColor+';border:2px solid '+bdColor+';border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">';
+    html+='<div><div style="font-size:13px;font-weight:700;color:'+tc+'">'+(isBest?'⭐ ':'')+s.name+'</div>';
+    html+='<div style="font-size:11px;color:'+tc2+';margin-top:3px">'+s.desc+'</div></div>';
+    html+='<div style="text-align:right;min-width:100px"><div style="font-size:11px;color:'+tc2+'">投$'+s.invest+'元</div>';
+    html+='<div style="font-size:15px;font-weight:700;color:'+tc3+'">+$'+s.ev+'元</div>';
+    html+='<div style="font-size:12px;color:'+tc3+'">ROI +'+s.roi+'%</div></div></div>';
   });
   // 建議
   html+='<div style="background:linear-gradient(135deg,rgba(10,158,110,0.15),rgba(26,111,212,0.1));border:1px solid rgba(10,158,110,0.4);border-radius:10px;padding:12px;margin:10px 0">';
