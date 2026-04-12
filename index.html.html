@@ -1169,13 +1169,18 @@ function processOdds(oddsData){
     oddsMap[key]={...game, home_team:hEn, away_team:aEn};
   }
 
-  // 從 ESPN 抓今日所有比賽（含已結束）
+  // 從 ESPN 抓今日所有比賽（含已結束），去除重複
+  const seenMatchups=new Set();
   for(const ev of espnScores){
     const comp=ev.competitions[0];
     const homeC=comp.competitors.find(c=>c.homeAway==='home');
     const awayC=comp.competitors.find(c=>c.homeAway==='away');
     if(!homeC||!awayC) continue;
-    const hEn=homeC.team.displayName,aEn=awayC.team.displayName;
+    const hEn=normTeam(homeC.team.displayName),aEn=normTeam(awayC.team.displayName);
+    // 去重複：同樣兩隊只保留第一筆（通常第一筆是最準確的）
+    const matchupKey=`${hEn}|${aEn}`;
+    if(seenMatchups.has(matchupKey)) continue;
+    seenMatchups.add(matchupKey);
     const hA=getAbbr(hEn),aA=getAbbr(aEn);
     const status=ev.status.type.state;
     const isFinal=status==='post',isLive=status==='in';
@@ -1495,8 +1500,8 @@ function renderScores(events){
     const card=document.createElement('div');card.className=`score-card${isLive?' live-game':''}`;
     card.innerHTML=`<div class="game-status ${isLive?'live':isFinal?'final':'pre'}">${statusText}</div>
     <div class="score-divider"></div>
-    <div class="score-team-row"><span class="score-team-name ${awayWin?'winner':''}">${zh(away?.team?.displayName||'')}</span><span class="score-pts ${awayWin?'winner':''}">${isLive||isFinal?away?.score||'0':'—'}</span></div>
-    <div class="score-team-row" style="margin-top:4px"><span class="score-team-name ${homeWin?'winner':''}">${zh(home?.team?.displayName||'')}</span><span class="score-pts ${homeWin?'winner':''}">${isLive||isFinal?home?.score||'0':'—'}</span></div>`;
+    <div class="score-team-row"><span class="score-team-name ${awayWin?'winner':''}">${zh(normTeam(away?.team?.displayName||''))}</span><span class="score-pts ${awayWin?'winner':''}">${isLive||isFinal?away?.score||'0':'—'}</span></div>
+    <div class="score-team-row" style="margin-top:4px"><span class="score-team-name ${homeWin?'winner':''}">${zh(normTeam(home?.team?.displayName||''))}</span><span class="score-pts ${homeWin?'winner':''}">${isLive||isFinal?home?.score||'0':'—'}</span></div>`;
     grid.appendChild(card);
   }
   c.innerHTML='';c.appendChild(grid);
