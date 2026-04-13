@@ -324,13 +324,13 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <div class="win-card"><div class="win-label">今日勝率</div><div class="win-val" id="winToday">—</div><div class="win-sub" id="winTodaySub">載入中</div><div class="win-bar-wrap"><div class="win-bar" id="winTodayBar" style="width:0%"></div></div></div>
       <div class="win-card"><div class="win-label">本週勝率</div><div class="win-val" id="winWeek">—</div><div class="win-sub" id="winWeekSub">載入中</div><div class="win-bar-wrap"><div class="win-bar" id="winWeekBar" style="width:0%"></div></div></div>
       <div class="win-card"><div class="win-label">本月勝率</div><div class="win-val" id="winMonth">—</div><div class="win-sub" id="winMonthSub">載入中</div><div class="win-bar-wrap"><div class="win-bar" id="winMonthBar" style="width:0%"></div></div></div>
-      <div class="win-card"><div class="win-label">高信心勝率</div><div class="win-val" id="winHighConf">—</div><div class="win-sub" id="winHighConfSub">信心度 &gt;70%</div><div class="win-bar-wrap"><div class="win-bar" id="winHighConfBar" style="width:0%"></div></div></div>
+      <div class="win-card"><div class="win-label">高信心勝率</div><div class="win-val" id="winHighConf">—</div><div class="win-sub" id="winHighConfSub">信心度 &gt;80%</div><div class="win-bar-wrap"><div class="win-bar" id="winHighConfBar" style="width:0%"></div></div></div>
     </div>
     <div class="ai-section" id="aiSection" style="display:none">
       <div class="ai-header">
         <div class="ai-badge">🤖 AI 精選</div>
         <div class="ai-title">高信心推薦（適合串關）</div>
-        <div class="ai-subtitle" id="aiWinRateText">信心度 &gt;70%</div>
+        <div class="ai-subtitle" id="aiWinRateText">信心度 &gt;80%</div>
       </div>
       <div class="ai-picks" id="aiPicks"></div>
     </div>
@@ -375,7 +375,7 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
     </div>
     <div class="stats-row">
       <div class="stat-card"><div class="stat-label">今日場次</div><div class="stat-val" id="statGames">—</div><div class="stat-sub">NBA 賽程</div></div>
-      <div class="stat-card"><div class="stat-label">高信心推薦</div><div class="stat-val" id="statRec">—</div><div class="stat-sub">信心度 &gt;70%</div></div>
+      <div class="stat-card"><div class="stat-label">高信心推薦</div><div class="stat-val" id="statRec">—</div><div class="stat-sub">信心度 &gt;80%</div></div>
       <div class="stat-card"><div class="stat-label">最高期望值</div><div class="stat-val" id="statMaxEV">—</div><div class="stat-sub">本日最佳</div></div>
       <div class="stat-card"><div class="stat-label">來源一致場次</div><div class="stat-val" id="statAgree">—</div><div class="stat-sub">模型＋博彩商同向</div></div>
     </div>
@@ -449,7 +449,7 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
     <div class="perf-stats">
       <div class="perf-card"><div class="perf-label">全部預測勝率</div><div class="perf-val" id="btTotal">—</div><div class="perf-sub" id="btTotalSub">從後端載入中</div></div>
       <div class="perf-card"><div class="perf-label">本週勝率</div><div class="perf-val" id="btWeek">—</div><div class="perf-sub" id="btWeekSub">本週紀錄</div></div>
-      <div class="perf-card"><div class="perf-label">高信心 &gt;70%</div><div class="perf-val" id="btHighConf">—</div><div class="perf-sub" id="btHighConfSub">信心度篩選</div></div>
+      <div class="perf-card"><div class="perf-label">高信心 &gt;80%</div><div class="perf-val" id="btHighConf">—</div><div class="perf-sub" id="btHighConfSub">信心度篩選</div></div>
       <div class="perf-card"><div class="perf-label">讓分盤勝率</div><div class="perf-val warn" id="btSpread">—</div><div class="perf-sub">讓分類型場次</div></div>
     </div>
     <!-- 讓分差值準確率分析 -->
@@ -466,7 +466,7 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <button class="hist-filter-btn active" onclick="filterHist('all',this)">全部</button>
       <button class="hist-filter-btn" onclick="filterHist('win',this)">✓ 只看勝</button>
       <button class="hist-filter-btn" onclick="filterHist('loss',this)">✗ 只看敗</button>
-      <button class="hist-filter-btn" onclick="filterHist('high',this)">高信心 &gt;70%</button>
+      <button class="hist-filter-btn" onclick="filterHist('high',this)">高信心 &gt;80%</button>
     </div>
     <table class="hist-table">
       <thead><tr><th>日期</th><th>對陣</th><th>信心度</th><th>預測</th><th>實際勝者</th><th>比分</th><th>下注方式</th><th>結果</th></tr></thead>
@@ -692,7 +692,7 @@ let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
 // ── 自動最優分組（比對台灣運彩開盤）
 function autoOptimalGroups(){
   var resultDiv=document.getElementById('optimalGroupsResult');
-  var highConf=allGames.filter(function(g){return !g.isFinal&&!g.isLive&&g.conf>=70&&g.betEV>=10;});
+  var highConf=allGames.filter(function(g){return !g.isFinal&&!g.isLive&&g.conf>=80&&g.betEV>=10;});
   highConf.sort(function(a,b){return b.conf-a.conf;});
   var n=highConf.length;
   if(!n){
@@ -969,7 +969,7 @@ function renderPredHist(){
   if(predHistFilter==='win') data=data.filter(h=>h.result===true);
   else if(predHistFilter==='loss') data=data.filter(h=>h.result===false);
   else if(predHistFilter==='pending') data=data.filter(h=>h.result===null);
-  else if(predHistFilter==='high') data=data.filter(h=>h.confidence>=70);
+  else if(predHistFilter==='high') data=data.filter(h=>h.confidence>=80);
 
   const wins=data.filter(h=>h.result===true).length;
   const settled=data.filter(h=>h.result!==null).length;
@@ -1105,7 +1105,7 @@ async function loadStatsFromServer(){
     document.getElementById('winHighConfSub').textContent=hc.total?`${hc.wins}勝 ${hc.total-hc.wins}敗`:'尚無資料';
     document.getElementById('winHighConfBar').style.width=(hc.rate||0)+'%';
     highConfWinRate=hc.total?hc.rate:null;
-    if(highConfWinRate) document.getElementById('aiWinRateText').textContent=`信心度 >70% · 歷史勝率 ${highConfWinRate}%`;
+    if(highConfWinRate) document.getElementById('aiWinRateText').textContent=`信心度 >80% · 歷史勝率 ${highConfWinRate}%`;
   }catch(e){setStatus('backend','error','後端連線失敗')}
 }
 
@@ -1431,7 +1431,7 @@ function processOdds(oddsData){
       betTeamEn=mp>=0.5?hEn:aEn;betOdds=h2hH?(mp>=0.5?h2hH:h2hA):null;
       betEV=betOdds?calcEV(mp>=0.5?mp:1-mp,betOdds):0;betType='不讓分';betColor='blue';
     }
-    const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
+    const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const freezeKey=`${hEn}|${aEn}`;
     if(!isLive&&!isFinal){
       frozenGameData[freezeKey]={mp,bp,h2hH,h2hA,spLine,ms,conf,
@@ -1491,7 +1491,7 @@ function processOdds(oddsData){
       else if(diff>0){betTeamEn=hEn;betOdds=spH||1.72;betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);betType=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;betColor=betType.includes('讓分')?'green':'blue'}
       else{betTeamEn=aEn;betOdds=spA||1.72;betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);const awSp=-spLine;betType=awSp<0?`讓分 ${awSp}`:`吃分 +${awSp}`;betColor=betType.includes('讓分')?'green':'blue'}
     }else{betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds);betType='不讓分';betColor='blue'}
-    const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
+    const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const st=new Date(game.commence_time);
     // commence_time 是 UTC，new Date() 自動轉台灣時間（UTC+8）
     const timeStr=`${st.getMonth()+1}/${st.getDate()} ${String(st.getHours()).padStart(2,'0')}:${String(st.getMinutes()).padStart(2,'0')} 台灣時間`;
@@ -1512,7 +1512,7 @@ function processOdds(oddsData){
 }
 
 function renderAIPicks(games){
-  const picks=games.filter(g=>g.conf>=70&&g.betEV>=10).sort((a,b)=>b.betEV-a.betEV);
+  const picks=games.filter(g=>g.conf>=80&&g.betEV>=10).sort((a,b)=>b.betEV-a.betEV);
   const section=document.getElementById('aiSection');const container=document.getElementById('aiPicks');
   if(!picks.length){section.style.display='none';return}
   section.style.display='block';container.innerHTML='';
@@ -1550,7 +1550,8 @@ function renderGames(){
   const futurePre=preG.filter(g=>g.twDate!==todayStr);
   games=[...livG,...todayPre,...finG,...futurePre];
 
-  document.getElementById('gameCount').textContent=`${games.length} 場`;
+  const todayCount=[...livG,...todayPre,...finG].length; // 只算今日（排除未來場次）
+  document.getElementById('gameCount').textContent=`${todayCount} 場`;
   if(!games.length){
     document.getElementById('gamesContainer').innerHTML='<div class="loading-state" style="color:var(--text3)">沒有符合條件的比賽</div>';
     return;
@@ -1840,7 +1841,7 @@ function renderHist(){
   let data=[...histData];
   if(histFilter==='win')data=data.filter(h=>h.result===true);
   else if(histFilter==='loss')data=data.filter(h=>h.result===false);
-  else if(histFilter==='high')data=data.filter(h=>h.confidence>=70);
+  else if(histFilter==='high')data=data.filter(h=>h.confidence>=80);
   document.getElementById('histCount').textContent=`${data.length} 筆真實紀錄`;
   const shown=data.slice(0,histShowCount);
   const tbody=document.getElementById('histBody');tbody.innerHTML='';
