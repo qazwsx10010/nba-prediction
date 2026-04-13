@@ -1433,12 +1433,35 @@ function processOdds(oddsData){
     }
     const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const freezeKey=`${hEn}|${aEn}`;
+    // 快照所有開打前的數據（包含傷兵/B2B/Polymarket/近況/主客場勝率）
     if(!isLive&&!isFinal){
-      frozenGameData[freezeKey]={mp,bp,h2hH,h2hA,spLine,ms,conf,
-        betTeamEn,betOdds,betEV,betType,betColor,recLevel,agree:Math.abs(mp-bp)<0.1};
+      const pmSnapInfo=getPMProb(hEn);
+      frozenGameData[freezeKey]={
+        mp,bp,h2hH,h2hA,spLine,ms,conf,
+        betTeamEn,betOdds,betEV,betType,betColor,recLevel,
+        agree:Math.abs(mp-bp)<0.1,
+        // 傷兵
+        injH:injDisplay(hEn), injA:injDisplay(aEn),
+        // B2B
+        b2bH:b2bStatus[hEn]||false, b2bA:b2bStatus[aEn]||false,
+        // Polymarket
+        pmInfo:pmSnapInfo,
+        // 近況 & 主客場勝率
+        hRecentAdj:teamData[hA]?.recent_adj,
+        aRecentAdj:teamData[aA]?.recent_adj,
+        hHomeSt:homeAwayStats[hEn],
+        aAwaySt:homeAwayStats[aEn],
+      };
     }
-    const snap=frozenGameData[freezeKey]||{mp,bp,h2hH,h2hA,spLine,ms,conf,
-      betTeamEn,betOdds,betEV,betType,betColor,recLevel,agree:Math.abs(mp-bp)<0.1};
+    const _fb={mp,bp,h2hH,h2hA,spLine,ms,conf,
+      betTeamEn,betOdds,betEV,betType,betColor,recLevel,agree:Math.abs(mp-bp)<0.1,
+      injH:injDisplay(hEn),injA:injDisplay(aEn),
+      b2bH:b2bStatus[hEn]||false,b2bA:b2bStatus[aEn]||false,
+      pmInfo:getPMProb(hEn),
+      hRecentAdj:teamData[hA]?.recent_adj,aRecentAdj:teamData[aA]?.recent_adj,
+      hHomeSt:homeAwayStats[hEn],aAwaySt:homeAwayStats[aEn],
+    };
+    const snap=frozenGameData[freezeKey]||_fb;
 
     const actualWinner=isFinal?(hScore>aScore?hEn:aEn):null;
     let predCorrect=null;
@@ -1460,6 +1483,12 @@ function processOdds(oddsData){
       spLine:snap.spLine,ms:snap.ms,conf:snap.conf,
       betTeamEn:snap.betTeamEn,betOdds:snap.betOdds,betEV:snap.betEV,
       betType:snap.betType,betColor:snap.betColor,recLevel:snap.recLevel,agree:snap.agree,
+      // 快照的輔助數據
+      snapInjH:snap.injH, snapInjA:snap.injA,
+      snapB2bH:snap.b2bH, snapB2bA:snap.b2bA,
+      snapPmInfo:snap.pmInfo,
+      snapHRecentAdj:snap.hRecentAdj, snapARecentAdj:snap.aRecentAdj,
+      snapHHomeSt:snap.hHomeSt, snapAAwaySt:snap.aAwaySt,
       timeStr,startTime:st,twDate:twDateStr(st),
       status,isFinal,isLive,statusText,hScore,aScore,actualWinner,predCorrect
     });
@@ -1599,18 +1628,15 @@ function renderGames(){
     const hP=Math.round(g.mp*100),aP=100-hP;
     const hZH=zh(g.hEn),aZH=zh(g.aEn),betZH=zh(g.betTeamEn);
     // 真實傷兵
-    const injHStr=injDisplay(g.hEn);
-    const injAStr=injDisplay(g.aEn);
-    // B2B 標籤
-    const hB2B=b2bStatus[g.hEn]||false;
-    const aB2B=b2bStatus[g.aEn]||false;
-    // Polymarket 勝率
-    const pmH=getPMProb(g.hEn);
+    // 使用快照數據（開打後不變）；若無快照（未開始）則用即時值
+    const injHStr = (g.isLive||g.isFinal) ? (g.snapInjH||'') : injDisplay(g.hEn);
+    const injAStr = (g.isLive||g.isFinal) ? (g.snapInjA||'') : injDisplay(g.aEn);
+    const hB2B    = (g.isLive||g.isFinal) ? (g.snapB2bH||false) : (b2bStatus[g.hEn]||false);
+    const aB2B    = (g.isLive||g.isFinal) ? (g.snapB2bA||false) : (b2bStatus[g.aEn]||false);
+    const pmH     = (g.isLive||g.isFinal) ? g.snapPmInfo : getPMProb(g.hEn);
     const pmHPct=pmH?pmH.probPct:null;
     const pmVolume=pmH?pmH.volume:null;
     const pmReliable=pmH?pmH.reliable:false;
-    if(!pmH&&Object.keys(pmOdds).length>0) console.log(`❌ PM找不到: "${g.hEn}" → keys:`, Object.keys(pmOdds));
-    else if(Object.keys(pmOdds).length===0) console.log('⚠️ pmOdds 是空的！');
     const bkH=Math.round(g.bp*100);
     const spDiff=g.spLine!==null?(g.ms-g.spLine).toFixed(1):null;
     const h2hEV=calcEV(hP>=50?g.mp:1-g.mp,hP>=50?g.h2hH:g.h2hA);
@@ -1686,10 +1712,10 @@ function renderGames(){
         ${pmHPct!==null&&!pmReliable?`<div class="data-row"><span class="dr-label" style="color:var(--amber)">⚠️ Polymarket 提示</span><span style="font-size:11px;color:var(--amber)">成交量不足 $5,000，僅供參考，不納入主要計算</span></div>`:''}
         <div class="data-row"><span class="dr-label">ELO 評分</span><span class="dr-val">${aZH.slice(-2)} ${teamData[g.aA]?.elo||'—'} / ${hZH.slice(-2)} ${teamData[g.hA]?.elo||'—'}</span></div>
         ${(()=>{
-          const hAdj=teamData[g.hA]?.recent_adj;
-          const aAdj=teamData[g.aA]?.recent_adj;
-          const hSt=homeAwayStats[g.hEn];
-          const aSt=homeAwayStats[g.aEn];
+          const hAdj=(g.isLive||g.isFinal)?g.snapHRecentAdj:teamData[g.hA]?.recent_adj;
+          const aAdj=(g.isLive||g.isFinal)?g.snapARecentAdj:teamData[g.aA]?.recent_adj;
+          const hSt=(g.isLive||g.isFinal)?g.snapHHomeSt:homeAwayStats[g.hEn];
+          const aSt=(g.isLive||g.isFinal)?g.snapAAwaySt:homeAwayStats[g.aEn];
           const parts=[];
           if(hAdj!==undefined&&hAdj!==0) parts.push(`${hZH.slice(-2)} 近況${hAdj>0?'🔥':'❄️'}${hAdj>0?'+':''}${hAdj}`);
           if(aAdj!==undefined&&aAdj!==0) parts.push(`${aZH.slice(-2)} 近況${aAdj>0?'🔥':'❄️'}${aAdj>0?'+':''}${aAdj}`);
