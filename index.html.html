@@ -1591,7 +1591,170 @@ function renderGames(){
     grid.className='games-grid';
     container.appendChild(grid);
 
-  for(const g of dayGames){    grid.appendChild(card);
+  for(const g of dayGames){
+    const hP=Math.round(g.mp*100),aP=100-hP;
+    const hZH=zh(g.hEn),aZH=zh(g.aEn),betZH=zh(g.betTeamEn);
+    // 真實傷兵
+    const injHStr=injDisplay(g.hEn);
+    const injAStr=injDisplay(g.aEn);
+    // B2B 標籤
+    const hB2B=b2bStatus[g.hEn]||false;
+    const aB2B=b2bStatus[g.aEn]||false;
+    // Polymarket 勝率
+    const pmH=getPMProb(g.hEn);
+    const pmHPct=pmH?pmH.probPct:null;
+    const pmVolume=pmH?pmH.volume:null;
+    const pmReliable=pmH?pmH.reliable:false;
+    if(!pmH&&Object.keys(pmOdds).length>0) console.log(`❌ PM找不到: "${g.hEn}" → keys:`, Object.keys(pmOdds));
+    else if(Object.keys(pmOdds).length===0) console.log('⚠️ pmOdds 是空的！');
+    const bkH=Math.round(g.bp*100);
+    const spDiff=g.spLine!==null?(g.ms-g.spLine).toFixed(1):null;
+    const h2hEV=calcEV(hP>=50?g.mp:1-g.mp,hP>=50?g.h2hH:g.h2hA);
+    const recLabel=g.recLevel==='rec'?'⭐ 高信心推薦':g.recLevel==='con'?'🔶 可考慮':'— 觀望';
+    const leftZH=aZH,rightZH=hZH;
+    const leftP=aP,rightP=hP;
+    const leftRole='客場',rightRole='主場';
+    const leftInjStr=injAStr,rightInjStr=injHStr;
+    const leftB2B=aB2B,rightB2B=hB2B;
+    const leftFav=aP>hP,rightFav=hP>=aP;
+    const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
+    // 已結束比賽顯示結果
+    const resultBanner=g.isFinal?`
+      <div style="background:${g.predCorrect?'var(--green2)':'var(--red2)'};border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;border:1px solid ${g.predCorrect?'rgba(10,158,110,0.2)':'rgba(212,48,80,0.2)'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:700;color:${g.predCorrect===null?'var(--text3)':g.predCorrect?'var(--green)':'var(--red)'}">${g.predCorrect===null?'⏳ 無法判斷':g.predCorrect?'✓ 預測正確':'✗ 預測失敗'}</span>
+          <span style="color:var(--text2);font-size:11px">終場・${zh(g.actualWinner||'').slice(-2)} 勝</span>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">預測依據：${zh(g.betTeamEn||'').slice(-2)} ${g.betType||'不讓分'}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="text-align:center;flex:1">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.aEn).slice(-2)}（客）</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${g.actualWinner===g.aEn?'var(--green)':'var(--text2)'}">${g.aScore}</div>
+          </div>
+          <div style="font-size:13px;color:var(--text3);padding:0 8px">:</div>
+          <div style="text-align:center;flex:1">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.hEn).slice(-2)}（主）</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${g.actualWinner===g.hEn?'var(--green)':'var(--text2)'}">${g.hScore}</div>
+          </div>
+        </div>
+      </div>`:g.isLive?`
+      <div style="background:rgba(224,48,48,0.1);border-radius:8px;padding:8px 12px;margin-bottom:10px;border:1px solid rgba(224,48,48,0.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-weight:700;color:#e03030;animation:pulse 1s infinite">🔴 進行中</span>
+          <span style="color:var(--text2);font-size:11px">${g.statusText}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="text-align:center;flex:1">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.aEn).slice(-2)}（客）</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--text)">${g.aScore}</div>
+          </div>
+          <div style="font-size:13px;color:var(--text3);padding:0 8px">:</div>
+          <div style="text-align:center;flex:1">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.hEn).slice(-2)}（主）</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--text)">${g.hScore}</div>
+          </div>
+        </div>
+      </div>`:'';
+    card.innerHTML=`
+      <div class="card-header"><div class="card-time">${g.timeStr}</div><div class="rec-badge ${g.recLevel}">${recLabel}</div></div>
+      ${resultBanner}
+      <div class="matchup-prob">
+        <div class="mp-team ${leftFav?'fav':'dog'}" style="flex:${Math.max(leftP,20)}">
+          <div class="mp-label">${leftRole}${leftB2B?'<span style="font-size:9px;background:rgba(212,48,80,0.2);color:var(--red);padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
+          <div class="mp-name">${leftZH}</div>
+          <div class="mp-pct">${leftP}%</div>
+          ${leftInjStr?`<div style="font-size:9px;color:${leftFav?'rgba(255,255,255,0.85)':'var(--red)'};margin-top:2px">${leftInjStr}</div>`:''}
+        </div>
+        <div class="mp-vs">VS</div>
+        <div class="mp-team ${rightFav?'fav':'dog'}" style="flex:${Math.max(rightP,20)}">
+          <div class="mp-label">${rightRole}${rightB2B?'<span style="font-size:9px;background:rgba(212,48,80,0.3);color:#ffcccc;padding:1px 4px;border-radius:3px;margin-left:3px">B2B</span>':''}</div>
+          <div class="mp-name">${rightZH}</div>
+          <div class="mp-pct">${rightP}%</div>
+          ${rightInjStr?`<div style="font-size:9px;color:${rightFav?'rgba(255,255,255,0.85)':'var(--red)'};margin-top:2px">${rightInjStr}</div>`:''}
+        </div>
+      </div>
+      <div class="data-rows">
+        <div class="data-row"><span class="dr-label">博彩商隱含勝率</span><span class="dr-val b">${hZH.slice(-2)} ${bkH}% / ${aZH.slice(-2)} ${100-bkH}%</span></div>
+        ${pmHPct!==null?`<div class="data-row"><span class="dr-label">🟣 Polymarket 勝率${pmReliable?'':' ⚠️低流動性'}</span><span class="dr-val" style="color:${pmReliable?'#6c3fc5':'var(--amber)'}">
+          ${zh(g.hEn).slice(-2)} ${pmHPct}% / ${zh(g.aEn).slice(-2)} ${(100-pmHPct).toFixed(1)}%
+          <span style="font-size:10px;color:var(--text3);margin-left:4px">成交量 $${pmVolume?.toLocaleString()||'—'}</span>
+        </span></div>`:''}
+        ${pmHPct!==null&&!pmReliable?`<div class="data-row"><span class="dr-label" style="color:var(--amber)">⚠️ Polymarket 提示</span><span style="font-size:11px;color:var(--amber)">成交量不足 $5,000，僅供參考，不納入主要計算</span></div>`:''}
+        <div class="data-row"><span class="dr-label">ELO 評分</span><span class="dr-val">${aZH.slice(-2)} ${teamData[g.aA]?.elo||'—'} / ${hZH.slice(-2)} ${teamData[g.hA]?.elo||'—'}</span></div>
+        ${(()=>{
+          const hAdj=teamData[g.hA]?.recent_adj;
+          const aAdj=teamData[g.aA]?.recent_adj;
+          const hSt=homeAwayStats[g.hEn];
+          const aSt=homeAwayStats[g.aEn];
+          const parts=[];
+          if(hAdj!==undefined&&hAdj!==0) parts.push(`${hZH.slice(-2)} 近況${hAdj>0?'🔥':'❄️'}${hAdj>0?'+':''}${hAdj}`);
+          if(aAdj!==undefined&&aAdj!==0) parts.push(`${aZH.slice(-2)} 近況${aAdj>0?'🔥':'❄️'}${aAdj>0?'+':''}${aAdj}`);
+          const haStr=[];
+          if(hSt?.homeWinPct) haStr.push(`${hZH.slice(-2)}主${hSt.homeWinPct}%`);
+          if(aSt?.awayWinPct) haStr.push(`${aZH.slice(-2)}客${aSt.awayWinPct}%`);
+          return `
+            ${parts.length?`<div class="data-row"><span class="dr-label">近期10場</span><span class="dr-val">${parts.join(' / ')}</span></div>`:''}
+            ${haStr.length?`<div class="data-row"><span class="dr-label">主客場勝率</span><span class="dr-val">${haStr.join(' / ')}</span></div>`:''}
+          `;
+        })()}
+        ${hB2B||aB2B?`<div class="data-row"><span class="dr-label">背靠背</span><span class="dr-val r">${hB2B?hZH.slice(-2)+' 昨天有比賽':''}${hB2B&&aB2B?' / ':''}${aB2B?aZH.slice(-2)+' 昨天有比賽':''}</span></div>`:''}
+        <div class="data-row"><span class="dr-label">模型預測分差</span><span class="dr-val ${g.ms>=0?'g':'r'}">${g.ms>=0?hZH.slice(-2):aZH.slice(-2)} +${Math.abs(g.ms).toFixed(1)} 分</span></div>
+        ${g.spLine!==null?`<div class="data-row"><span class="dr-label">博彩讓分</span><span class="dr-val">${g.spLine<0?hZH.slice(-2)+' '+g.spLine:aZH.slice(-2)+' +'+Math.abs(g.spLine)} 分</span></div>
+        <div class="data-row"><span class="dr-label">模型 vs 讓分差值</span><span class="dr-val ${parseFloat(spDiff)>0?'g':parseFloat(spDiff)<0?'r':'a'}">${parseFloat(spDiff)>0?'+':''}${spDiff} 分</span></div>`:''}
+      </div>
+      <div class="divider"></div>
+      <div class="sources" style="grid-template-columns:${pmHPct!==null?'1fr 1fr 1fr':'1fr 1fr'}">
+        <div class="source-card"><div class="source-name">博彩商綜合</div><div class="source-pick">${bkH>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(bkH,100-bkH)}%</div></div>
+        <div class="source-card"><div class="source-name">ELO 模型</div><div class="source-pick">${hP>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(hP,aP)}%</div><span class="source-agree ${g.agree?'yes':'no'}">${g.agree?'✅ 方向一致':'⚠️ 方向分歧'}</span></div>
+        ${pmHPct!==null?`<div class="source-card" style="border-color:${pmReliable?'rgba(108,63,197,0.3)':'rgba(184,120,0,0.3)'}">
+          <div class="source-name" style="color:${pmReliable?'#6c3fc5':'var(--amber)'}">🟣 Polymarket${pmReliable?'':' ⚠️'}</div>
+          <div class="source-pick">${pmHPct>=50?hZH.slice(-2):aZH.slice(-2)}</div>
+          <div class="source-prob" style="color:${pmReliable?'#6c3fc5':'var(--amber)'}">${Math.max(pmHPct,100-pmHPct).toFixed(1)}%</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">$${pmVolume?.toLocaleString()||'—'}</div>
+          <span class="source-agree ${(pmHPct>=50)===(hP>=50)?'yes':'no'}">${(pmHPct>=50)===(hP>=50)?'✅ 同向':'⚠️ 分歧'}</span>
+        </div>`:''}</div>
+      <div class="ev-section">
+        <div class="ev-title">📊 期望值（每下注 100 元）${highConfWinRate&&g.recLevel==='rec'?` · 歷史高信心勝率 ${highConfWinRate}%`:''}</div>
+        <div class="ev-options">
+          <div class="ev-opt ${g.betEV>=0?'pos':'neg'}"><div class="ev-type">${g.betType}</div><div class="ev-num ${g.betEV>=0?'pos':'neg'}">${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div><div class="ev-detail">${betZH.slice(-2)} 賠率 ${g.betOdds?.toFixed(2)||'—'}</div></div>
+          <div class="ev-opt ${h2hEV>=0?'pos':'neg'}"><div class="ev-type">不讓分</div><div class="ev-num ${h2hEV>=0?'pos':'neg'}">${h2hEV>=0?'+':''}${h2hEV.toFixed(1)}%</div><div class="ev-detail">${hP>=50?hZH.slice(-2):aZH.slice(-2)} 賠率 ${(hP>=50?g.h2hH:g.h2hA)?.toFixed(2)||'—'}</div></div>
+        </div>
+      </div>
+      <div class="bet-box ${g.betColor}">
+        <div><div class="bet-label">最佳下注建議</div><div class="bet-val">${betZH} ${g.betType}</div></div>
+        <div class="bet-right"><div class="bet-odds">賠率 ${g.betOdds?.toFixed(2)||'—'}</div><div class="bet-ev">期望值 ${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div></div>
+      </div>
+      ${!g.isFinal&&!g.isLive&&g.betOdds?(()=>{
+        const pKey=g.betTeamEn.replace(/\s/g,'_');
+        parlayGameMap[pKey]={teamEn:g.betTeamEn,teamZH:betZH,betType:g.betType,odds:parseFloat(g.betOdds?.toFixed(2)||1.72),conf:g.conf,ev:parseFloat(g.betEV?.toFixed(1)||0)};
+        return `<button class="add-parlay-btn" onclick="addToParlayByKey('${pKey}')">＋ 加入串關（賠率 ${g.betOdds?.toFixed(2)||'—'}）</button>`;
+      })():''}
+      ${!g.isFinal&&!g.isLive?(()=>{
+        const now=new Date();
+        const gameTime=g.startTime;
+        const diffMs=gameTime-now;
+        const diffHrs=diffMs/3600000;
+        let tipBg,tipColor,tipIcon,tipText;
+        if(diffHrs>4){
+          tipBg='rgba(139,144,168,0.08)';tipColor='var(--text3)';tipIcon='⏰';
+          tipText=`賠率尚未穩定，建議開賽前 1~2 小時再確認`;
+        } else if(diffHrs>1){
+          tipBg='rgba(10,158,110,0.08)';tipColor='var(--green)';tipIcon='✅';
+          tipText=`現在是最佳下注時機！賠率穩定，可確認後下注`;
+        } else if(diffHrs>0){
+          tipBg='rgba(184,120,0,0.08)';tipColor='var(--amber)';tipIcon='⚠️';
+          tipText=`開賽前 1 小時內，賠率可能急劇變動，謹慎下注`;
+        } else {
+          tipBg='rgba(212,48,80,0.08)';tipColor='var(--red)';tipIcon='🔴';
+          tipText=`比賽已開始或即將開始`;
+        }
+        return `<div style="background:${tipBg};border-radius:6px;padding:7px 10px;margin-top:6px;font-size:11px;color:${tipColor};display:flex;align-items:center;gap:6px">
+          <span>${tipIcon}</span>
+          <span>${tipText}</span>
+          <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;color:var(--text3)">${diffHrs>0?`距開賽 ${diffHrs>=1?Math.floor(diffHrs)+'小時':''}${Math.floor((diffHrs%1)*60)}分`:'已開始'}</span>
+        </div>`;
+      })():''}`;
+    grid.appendChild(card);
   } // end dayGames
   } // end dateGroups
 }
