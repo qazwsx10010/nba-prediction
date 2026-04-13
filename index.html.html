@@ -685,7 +685,7 @@ function renderSpreadAnalysis(){
   document.getElementById('spreadAnalysisCount').textContent=`${totalAnalyzed} 場分析`;
 }
 let allGames=[],currentFilter='all',currentSort='ev';
-let frozenGameData={}; // key: hEn|aEn → 開打前快照 {recLevel,betType,betOdds,betEV,betTeamEn,betColor,conf,spLine}
+let frozenGameData={}; // key: hEn|aEn → 開打前完整 game 物件快照
 let parlayPicks=[], parlayGameMap={};
 let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
 
@@ -1420,31 +1420,32 @@ function processOdds(oddsData){
       betTeamEn=mp>=0.5?hEn:aEn;betOdds=h2hH?(mp>=0.5?h2hH:h2hA):null;
       betEV=betOdds?calcEV(mp>=0.5?mp:1-mp,betOdds):0;betType='不讓分';betColor='blue';
     }
-    const calcedRecLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
+    const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const freezeKey=`${hEn}|${aEn}`;
-    // 比賽開打或結束後：鎖定開打前的所有預測（betType/betOdds/betEV/recLevel），不隨即時賠率變動
-    if(isLive||isFinal){
-      if(!(freezeKey in frozenGameData)){
-        // 第一次進入 live/final，用當前算出的值做快照
-        frozenGameData[freezeKey]={recLevel:calcedRecLevel,betType,betOdds,betEV,betTeamEn,betColor,conf,spLine};
-      }
-    } else {
-      // 未開始：每次重算都更新快照
-      frozenGameData[freezeKey]={recLevel:calcedRecLevel,betType,betOdds,betEV,betTeamEn,betColor,conf,spLine};
-    }
-    const frozen=frozenGameData[freezeKey]||{};
-    const recLevel=frozen.recLevel||calcedRecLevel;
-    // 開打後用快照覆蓋 betType/betOdds/betEV（避免 Odds API 撤銷賠率後顯示錯誤）
-    if((isLive||isFinal)&&frozen.betType){
-      betType=frozen.betType;betOdds=frozen.betOdds;betEV=frozen.betEV;
-      betTeamEn=frozen.betTeamEn;betColor=frozen.betColor;
-    }
 
     // 實際結果
     const actualWinner=isFinal?(hScore>aScore?hEn:aEn):null;
     const predCorrect=isFinal&&betTeamEn?(actualWinner===betTeamEn):null;
 
-    games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1,status,isFinal,isLive,statusText,hScore,aScore,actualWinner,predCorrect});
+    // ── 快照機制：只要比賽還沒開打，就持續更新快照
+    // 一旦開打(isLive)或結束(isFinal)，鎖定快照不再更新
+    if(!isLive&&!isFinal){
+      frozenGameData[freezeKey]={mp,bp,h2hH,h2hA,spLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,agree:Math.abs(mp-bp)<0.1};
+    }
+    // 取快照（若無快照則用當前值，例如頁面載入時比賽已在進行中）
+    const snap=frozenGameData[freezeKey]||{mp,bp,h2hH,h2hA,spLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,agree:Math.abs(mp-bp)<0.1};
+
+    games.push({
+      hEn,aEn,hA,aA,
+      // 預測相關：全部用快照（開打後不變）
+      mp:snap.mp,bp:snap.bp,h2hH:snap.h2hH,h2hA:snap.h2hA,
+      spLine:snap.spLine,ms:snap.ms,conf:snap.conf,
+      betTeamEn:snap.betTeamEn,betOdds:snap.betOdds,betEV:snap.betEV,
+      betType:snap.betType,betColor:snap.betColor,recLevel:snap.recLevel,
+      agree:snap.agree,
+      // 即時資料：只有這些會更新
+      timeStr,startTime:st,status,isFinal,isLive,statusText,hScore,aScore,actualWinner,predCorrect
+    });
   }
 
   // 加入 Odds API 有但 ESPN 沒有的比賽
