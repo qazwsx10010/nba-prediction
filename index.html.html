@@ -685,7 +685,7 @@ function renderSpreadAnalysis(){
   document.getElementById('spreadAnalysisCount').textContent=`${totalAnalyzed} 場分析`;
 }
 let allGames=[],currentFilter='all',currentSort='ev';
-let frozenRecLevels={}; // key: hEn|aEn → recLevel（開打時快照，不再更新）
+let frozenGameData={}; // key: hEn|aEn → 開打前快照 {recLevel,betType,betOdds,betEV,betTeamEn,betColor,conf,spLine}
 let parlayPicks=[], parlayGameMap={};
 let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
 
@@ -1422,14 +1422,23 @@ function processOdds(oddsData){
     }
     const calcedRecLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const freezeKey=`${hEn}|${aEn}`;
-    // 比賽開打或結束後：鎖定開打前的 recLevel（不隨即時賠率更新）
+    // 比賽開打或結束後：鎖定開打前的所有預測（betType/betOdds/betEV/recLevel），不隨即時賠率變動
     if(isLive||isFinal){
-      if(!(freezeKey in frozenRecLevels)) frozenRecLevels[freezeKey]=calcedRecLevel;
+      if(!(freezeKey in frozenGameData)){
+        // 第一次進入 live/final，用當前算出的值做快照
+        frozenGameData[freezeKey]={recLevel:calcedRecLevel,betType,betOdds,betEV,betTeamEn,betColor,conf,spLine};
+      }
     } else {
       // 未開始：每次重算都更新快照
-      frozenRecLevels[freezeKey]=calcedRecLevel;
+      frozenGameData[freezeKey]={recLevel:calcedRecLevel,betType,betOdds,betEV,betTeamEn,betColor,conf,spLine};
     }
-    const recLevel=frozenRecLevels[freezeKey];
+    const frozen=frozenGameData[freezeKey]||{};
+    const recLevel=frozen.recLevel||calcedRecLevel;
+    // 開打後用快照覆蓋 betType/betOdds/betEV（避免 Odds API 撤銷賠率後顯示錯誤）
+    if((isLive||isFinal)&&frozen.betType){
+      betType=frozen.betType;betOdds=frozen.betOdds;betEV=frozen.betEV;
+      betTeamEn=frozen.betTeamEn;betColor=frozen.betColor;
+    }
 
     // 實際結果
     const actualWinner=isFinal?(hScore>aScore?hEn:aEn):null;
@@ -1546,7 +1555,7 @@ function renderGames(){
     const leftRole='客場',rightRole='主場';
     const leftInjStr=injAStr,rightInjStr=injHStr;
     const leftB2B=aB2B,rightB2B=hB2B;
-    const leftFav=aP>hP,rightFav=hP>=aP; // 誰是大熱門（決定綠色背景）
+    const leftFav=aP>hP,rightFav=hP>=aP;
     const card=document.createElement('div');card.className=`game-card ${g.recLevel}`;
     // 已結束比賽顯示結果
     const resultBanner=g.isFinal?`
