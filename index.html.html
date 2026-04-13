@@ -685,7 +685,7 @@ function renderSpreadAnalysis(){
   document.getElementById('spreadAnalysisCount').textContent=`${totalAnalyzed} 場分析`;
 }
 let allGames=[],currentFilter='all',currentSort='ev';
-let frozenGameData={}; // key: hEn|aEn → 開打前完整 game 物件快照
+let frozenGameData={}; // key: hEn|aEn → 開打前完整預測快照
 let parlayPicks=[], parlayGameMap={};
 let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
 
@@ -1332,8 +1332,19 @@ function normTeam(n){return TEAM_NORMALIZE[n]||n;}
 
 function processOdds(oddsData){
   const games=[];
+
+  // ── 日期過濾：只保留台灣時間「今日」的賽事
+  // 台灣時間 = UTC+8，取今天 00:00:00 ~ 23:59:59（台灣時間）
+  const nowTW=new Date(Date.now()+8*3600000); // UTC to TW
+  const todayTWStr=nowTW.toISOString().slice(0,10); // 'YYYY-MM-DD'
+  function isTodayTW(dateStr){
+    const d=new Date(new Date(dateStr).getTime()+8*3600000);
+    return d.toISOString().slice(0,10)===todayTWStr;
+  }
+
   const oddsMap={};
   for(const game of oddsData){
+    if(!isTodayTW(game.commence_time)) continue; // 非今日台灣時間的比賽濾掉
     const hEn=normTeam(game.home_team), aEn=normTeam(game.away_team);
     const key=`${hEn}|${aEn}`;
     oddsMap[key]={...game, home_team:hEn, away_team:aEn};
@@ -1342,6 +1353,7 @@ function processOdds(oddsData){
   // 從 ESPN 抓今日所有比賽（含已結束），去除重複
   const seenMatchups=new Set();
   for(const ev of espnScores){
+    if(!isTodayTW(ev.date)) continue; // 只保留台灣時間今日的比賽
     const comp=ev.competitions[0];
     const homeC=comp.competitors.find(c=>c.homeAway==='home');
     const awayC=comp.competitors.find(c=>c.homeAway==='away');
@@ -1423,28 +1435,44 @@ function processOdds(oddsData){
     const recLevel=conf>=70&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const freezeKey=`${hEn}|${aEn}`;
 
-    // 實際結果
-    const actualWinner=isFinal?(hScore>aScore?hEn:aEn):null;
-    const predCorrect=isFinal&&betTeamEn?(actualWinner===betTeamEn):null;
-
-    // ── 快照機制：只要比賽還沒開打，就持續更新快照
-    // 一旦開打(isLive)或結束(isFinal)，鎖定快照不再更新
+    // ── 快照：未開始時持續更新，開打/結束後鎖定
     if(!isLive&&!isFinal){
-      frozenGameData[freezeKey]={mp,bp,h2hH,h2hA,spLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,agree:Math.abs(mp-bp)<0.1};
+      frozenGameData[freezeKey]={mp,bp,h2hH,h2hA,spLine,ms,conf,
+        betTeamEn,betOdds,betEV,betType,betColor,recLevel,
+        agree:Math.abs(mp-bp)<0.1};
     }
-    // 取快照（若無快照則用當前值，例如頁面載入時比賽已在進行中）
-    const snap=frozenGameData[freezeKey]||{mp,bp,h2hH,h2hA,spLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,agree:Math.abs(mp-bp)<0.1};
+    const snap=frozenGameData[freezeKey]||{mp,bp,h2hH,h2hA,spLine,ms,conf,
+      betTeamEn,betOdds,betEV,betType,betColor,recLevel,
+      agree:Math.abs(mp-bp)<0.1};
+
+    // ── 正確的預測結果判斷（依快照的 betType 判斷）
+    const actualWinner=isFinal?(hScore>aScore?hEn:aEn):null;
+    let predCorrect=null;
+    if(isFinal&&snap.betTeamEn&&actualWinner){
+      const frozenBetType=snap.betType||'';
+      const isSpreadBet=frozenBetType.includes('讓分')||frozenBetType.includes('吃分');
+      if(isSpreadBet&&snap.spLine!==null){
+        // 讓分/吃分：要用分差判斷覆蓋線
+        const teamIsBetHome=snap.betTeamEn===hEn;
+        const scoreDiff=teamIsBetHome?(hScore-aScore):(aScore-hScore); // 推薦隊的得分優勢
+        const line=teamIsBetHome?snap.spLine:(-snap.spLine); // 推薦隊需要覆蓋的線
+        // 讓分(line<0)：推薦隊需贏超過|line|分；吃分(line>0)：推薦隊輸不超過line分即算覆蓋
+        predCorrect=scoreDiff>(-line);
+      } else {
+        // 不讓分：直接看誰贏
+        predCorrect=actualWinner===snap.betTeamEn;
+      }
+    }
 
     games.push({
       hEn,aEn,hA,aA,
-      // 預測相關：全部用快照（開打後不變）
       mp:snap.mp,bp:snap.bp,h2hH:snap.h2hH,h2hA:snap.h2hA,
       spLine:snap.spLine,ms:snap.ms,conf:snap.conf,
       betTeamEn:snap.betTeamEn,betOdds:snap.betOdds,betEV:snap.betEV,
       betType:snap.betType,betColor:snap.betColor,recLevel:snap.recLevel,
       agree:snap.agree,
-      // 即時資料：只有這些會更新
-      timeStr,startTime:st,status,isFinal,isLive,statusText,hScore,aScore,actualWinner,predCorrect
+      timeStr,startTime:st,status,isFinal,isLive,statusText,
+      hScore,aScore,actualWinner,predCorrect
     });
   }
 
@@ -1550,7 +1578,7 @@ function renderGames(){
     const spDiff=g.spLine!==null?(g.ms-g.spLine).toFixed(1):null;
     const h2hEV=calcEV(hP>=50?g.mp:1-g.mp,hP>=50?g.h2hH:g.h2hA);
     const recLabel=g.recLevel==='rec'?'⭐ 高信心推薦':g.recLevel==='con'?'🔶 可考慮':'— 觀望';
-    // 固定「客左主右」，與分數區塊一致
+    // 固定「客左主右」與分數一致
     const leftZH=aZH,rightZH=hZH;
     const leftP=aP,rightP=hP;
     const leftRole='客場',rightRole='主場';
@@ -1561,10 +1589,11 @@ function renderGames(){
     // 已結束比賽顯示結果
     const resultBanner=g.isFinal?`
       <div style="background:${g.predCorrect?'var(--green2)':'var(--red2)'};border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;border:1px solid ${g.predCorrect?'rgba(10,158,110,0.2)':'rgba(212,48,80,0.2)'}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-weight:700;color:${g.predCorrect?'var(--green)':'var(--red)'}">${g.predCorrect?'✓ 預測正確':'✗ 預測失敗'}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:700;color:${g.predCorrect?'var(--green)':'var(--red)'}">${g.predCorrect===null?'⏳ 無法判斷':g.predCorrect?'✓ 預測正確':'✗ 預測失敗'}</span>
           <span style="color:var(--text2);font-size:11px">終場・${zh(g.actualWinner||'').slice(-2)} 勝</span>
         </div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">預測依據：${zh(g.betTeamEn).slice(-2)} ${g.betType||'不讓分'}</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div style="text-align:center;flex:1">
             <div style="font-size:10px;color:var(--text3);margin-bottom:2px">${zh(g.aEn).slice(-2)}（客）</div>
