@@ -1500,12 +1500,15 @@ function processOdds(oddsData){
 
   games.sort((a,b)=>a.startTime-b.startTime);
   allGames=games;
-  document.getElementById('statGames').textContent=games.length;
-  document.getElementById('statRec').textContent=games.filter(g=>g.recLevel==='rec').length;
-  const maxEV=games.filter(g=>!g.isFinal).length?Math.max(...games.filter(g=>!g.isFinal).map(g=>g.betEV)):0;
+  // 統計數字只算今日台灣時間的比賽
+  const _todayStr=twDateStr(new Date());
+  const todayGames=games.filter(g=>g.twDate===_todayStr);
+  document.getElementById('statGames').textContent=todayGames.length;
+  document.getElementById('statRec').textContent=todayGames.filter(g=>g.recLevel==='rec').length;
+  const maxEV=todayGames.filter(g=>!g.isFinal).length?Math.max(...todayGames.filter(g=>!g.isFinal).map(g=>g.betEV)):0;
   document.getElementById('statMaxEV').textContent=maxEV>0?`+${maxEV.toFixed(1)}%`:'—';
-  document.getElementById('statAgree').textContent=games.filter(g=>g.agree).length;
-  renderAIPicks(games.filter(g=>!g.isFinal&&!g.isLive));renderGames();
+  document.getElementById('statAgree').textContent=todayGames.filter(g=>g.agree).length;
+  renderAIPicks(todayGames.filter(g=>!g.isFinal&&!g.isLive));renderGames();
 }
 
 function renderAIPicks(games){
