@@ -1383,7 +1383,7 @@ function twDateLabel(dateStr){
 // 回傳：{ h2hH, h2hA, spLine, spH, spA, ouLine,   ← Sharp 來源（優先）
 //         bp_sharp, bp_market, sharpEdge,           ← 聰明錢訊號
 //         sharpBook }                               ← 實際用了哪個 Sharp 來源
-const SHARP_BOOKS = ['betfair_ex_best_odds','betfair_ex_uk_ex','pinnacle'];
+const SHARP_BOOKS = ['betfair_ex_eu', 'pinnacle'];
 function parseBookmakers(bookmakers, hEn, aEn){
   let sharpH=null, sharpA=null, sharpSpLine=null, sharpSpH=null, sharpSpA=null, sharpOuLine=null, sharpBook=null;
   // 收集所有 bookmaker 的 h2h，用來算市場平均
@@ -1407,7 +1407,7 @@ function parseBookmakers(bookmakers, hEn, aEn){
       }
       if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');if(ov)sharpOuLine=ov.point;}
     }
-    if(foundH2H){ sharpBook=bk.title||preferred; break; } // 找到 Sharp 來源即停
+    if(foundH2H){ sharpBook=preferred; break; } // 找到 Sharp 來源即停
   }
 
   // 第二輪：所有 bookmaker 算市場平均（含 Sharp，不排除）
