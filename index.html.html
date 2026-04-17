@@ -686,6 +686,43 @@ function renderSpreadAnalysis(){
 }
 let allGames=[],currentFilter='all',currentSort='ev';
 let frozenGameData={}; // key: hEn|aEn → 開打前完整預測快照
+const LOCK_MINUTES = 5; // 開賽前幾分鐘起鎖定預測，不再更新快照
+
+// ── 持久化快照工具（第2層：localStorage，防止重整後用後見之明資料重建）
+function snapStorageKey(freezeKey, gameStartTime){
+  // key 帶日期，防止不同日期同對手組合互相汙染
+  const dateStr = twDateStr(new Date(gameStartTime));
+  return `nba_snap_${freezeKey}_${dateStr}`.replace(/[|\s]/g,'_');
+}
+function saveSnapToStorage(freezeKey, gameStartTime, snapObj){
+  try{
+    const k = snapStorageKey(freezeKey, gameStartTime);
+    localStorage.setItem(k, JSON.stringify(snapObj));
+  }catch(e){ /* localStorage 滿了就跳過，記憶體版還在 */ }
+}
+function loadSnapFromStorage(freezeKey, gameStartTime){
+  try{
+    const k = snapStorageKey(freezeKey, gameStartTime);
+    const raw = localStorage.getItem(k);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+// 清除超過 3 天的舊快照，避免 localStorage 無限增長
+function cleanOldSnaps(){
+  try{
+    const cutoff = Date.now() - 3*24*3600*1000;
+    Object.keys(localStorage).forEach(k=>{
+      if(!k.startsWith('nba_snap_')) return;
+      const raw = localStorage.getItem(k);
+      if(!raw) return;
+      try{
+        const obj = JSON.parse(raw);
+        if(obj._lockedAt && obj._lockedAt < cutoff) localStorage.removeItem(k);
+      }catch(e){ localStorage.removeItem(k); }
+    });
+  }catch(e){}
+}
+cleanOldSnaps();
 let parlayPicks=[], parlayGameMap={};
 let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
 
@@ -1433,26 +1470,36 @@ function processOdds(oddsData){
     }
     const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const freezeKey=`${hEn}|${aEn}`;
-    // 快照所有開打前的數據（包含傷兵/B2B/Polymarket/近況/主客場勝率）
-    if(!isLive&&!isFinal){
+    const minutesToStart = (st - new Date()) / 60000; // 正數=還沒開賽，負數=已過開賽時間
+
+    // ── 快照策略（三重防護）
+    // 條件：比賽尚未開始 且 距開賽超過 LOCK_MINUTES 分鐘
+    // → 這個時間窗才允許更新快照
+    if(!isLive && !isFinal && minutesToStart > LOCK_MINUTES){
       const pmSnapInfo=getPMProb(hEn);
-      frozenGameData[freezeKey]={
+      const newSnap={
         mp,bp,h2hH,h2hA,spLine,ms,conf,
         betTeamEn,betOdds,betEV,betType,betColor,recLevel,
         agree:Math.abs(mp-bp)<0.1,
-        // 傷兵
         injH:injDisplay(hEn), injA:injDisplay(aEn),
-        // B2B
         b2bH:b2bStatus[hEn]||false, b2bA:b2bStatus[aEn]||false,
-        // Polymarket
         pmInfo:pmSnapInfo,
-        // 近況 & 主客場勝率
         hRecentAdj:teamData[hA]?.recent_adj,
         aRecentAdj:teamData[aA]?.recent_adj,
         hHomeSt:homeAwayStats[hEn],
         aAwaySt:homeAwayStats[aEn],
+        _lockedAt: Date.now(),
+        _gameStart: st.getTime(),
       };
+      frozenGameData[freezeKey] = newSnap;
+      // 第2層：同時持久化到 localStorage，防重整後用後見之明資料
+      saveSnapToStorage(freezeKey, st.getTime(), newSnap);
     }
+
+    // 讀取快照優先順序：
+    // 1. 記憶體 frozenGameData（本次連線已鎖定）
+    // 2. localStorage（上次連線留下的持久化快照）
+    // 3. _fb 現場即時計算（僅在真的完全沒有快照時使用）
     const _fb={mp,bp,h2hH,h2hA,spLine,ms,conf,
       betTeamEn,betOdds,betEV,betType,betColor,recLevel,agree:Math.abs(mp-bp)<0.1,
       injH:injDisplay(hEn),injA:injDisplay(aEn),
@@ -1461,7 +1508,18 @@ function processOdds(oddsData){
       hRecentAdj:teamData[hA]?.recent_adj,aRecentAdj:teamData[aA]?.recent_adj,
       hHomeSt:homeAwayStats[hEn],aAwaySt:homeAwayStats[aEn],
     };
-    const snap=frozenGameData[freezeKey]||_fb;
+    // 如果進入鎖定期（isLive / isFinal / minutesToStart <= LOCK_MINUTES），
+    // 優先從 localStorage 取已持久化的快照，確保不被當下賠率汙染
+    const needStoredSnap = isLive || isFinal || minutesToStart <= LOCK_MINUTES;
+    const storedSnap = needStoredSnap ? loadSnapFromStorage(freezeKey, st.getTime()) : null;
+    const snap = frozenGameData[freezeKey] || storedSnap || _fb;
+
+    // 若是鎖定期但完全找不到快照（極端情況：第一次開網頁就已經在比賽中），
+    // 用 _fb 同時補存，讓後續重整不再喪失
+    if(needStoredSnap && !frozenGameData[freezeKey] && !storedSnap){
+      frozenGameData[freezeKey] = _fb;
+      saveSnapToStorage(freezeKey, st.getTime(), {..._fb, _lockedAt: Date.now(), _gameStart: st.getTime()});
+    }
 
     const actualWinner=isFinal?(hScore>aScore?hEn:aEn):null;
     let predCorrect=null;
@@ -1764,24 +1822,36 @@ function renderGames(){
         const gameTime=g.startTime;
         const diffMs=gameTime-now;
         const diffHrs=diffMs/3600000;
+        const diffMin=diffMs/60000;
         let tipBg,tipColor,tipIcon,tipText;
-        if(diffHrs>4){
+        // 判斷是否已進入鎖定期（開賽前 LOCK_MINUTES 分鐘內）
+        const isLocked = diffMin <= LOCK_MINUTES;
+        // 判斷快照來源（記憶體 or localStorage）
+        const hasStoredSnap = !!loadSnapFromStorage(`${g.hEn}|${g.aEn}`, g.startTime.getTime());
+        const inMemory = !!frozenGameData[`${g.hEn}|${g.aEn}`];
+        const snapSource = inMemory ? '記憶體' : hasStoredSnap ? '硬碟' : null;
+        if(isLocked){
+          tipBg='rgba(108,63,197,0.12)';tipColor='#c4a8ff';tipIcon='🔒';
+          tipText=snapSource
+            ? `預測已鎖定（快照來源：${snapSource}），此後更新賠率不影響此場預測`
+            : `預測已鎖定（開賽前 ${LOCK_MINUTES} 分鐘），若無快照則使用臨場數值`;
+        } else if(diffHrs>4){
           tipBg='rgba(139,144,168,0.08)';tipColor='var(--text3)';tipIcon='⏰';
           tipText=`賠率尚未穩定，建議開賽前 1~2 小時再確認`;
         } else if(diffHrs>1){
           tipBg='rgba(10,158,110,0.08)';tipColor='var(--green)';tipIcon='✅';
           tipText=`現在是最佳下注時機！賠率穩定，可確認後下注`;
-        } else if(diffHrs>0){
+        } else {
           tipBg='rgba(184,120,0,0.08)';tipColor='var(--amber)';tipIcon='⚠️';
           tipText=`開賽前 1 小時內，賠率可能急劇變動，謹慎下注`;
-        } else {
-          tipBg='rgba(212,48,80,0.08)';tipColor='var(--red)';tipIcon='🔴';
-          tipText=`比賽已開始或即將開始`;
         }
+        const countdownStr = isLocked
+          ? (diffMin>0?`${Math.ceil(diffMin)}分後開賽`:'即將/已開賽')
+          : (diffHrs>=1?`距開賽 ${Math.floor(diffHrs)}小時${Math.floor((diffHrs%1)*60)}分`:`距開賽 ${Math.ceil(diffMin)}分`);
         return `<div style="background:${tipBg};border-radius:6px;padding:7px 10px;margin-top:6px;font-size:11px;color:${tipColor};display:flex;align-items:center;gap:6px">
           <span>${tipIcon}</span>
           <span>${tipText}</span>
-          <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;color:var(--text3)">${diffHrs>0?`距開賽 ${diffHrs>=1?Math.floor(diffHrs)+'小時':''}${Math.floor((diffHrs%1)*60)}分`:'已開始'}</span>
+          <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;color:${isLocked?'#c4a8ff':'var(--text3)'}">${countdownStr}</span>
         </div>`;
       })():''}`;
     grid.appendChild(card);
