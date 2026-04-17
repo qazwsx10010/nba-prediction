@@ -707,10 +707,10 @@ function loadSnapFromStorage(freezeKey, gameStartTime){
     return raw ? JSON.parse(raw) : null;
   }catch(e){ return null; }
 }
-// 清除超過 3 天的舊快照，避免 localStorage 無限增長
+// 清除超過 7 天的舊快照，避免 localStorage 無限增長
 function cleanOldSnaps(){
   try{
-    const cutoff = Date.now() - 3*24*3600*1000;
+    const cutoff = Date.now() - 7*24*3600*1000;
     Object.keys(localStorage).forEach(k=>{
       if(!k.startsWith('nba_snap_')) return;
       const raw = localStorage.getItem(k);
