@@ -1357,7 +1357,7 @@ async function loadOdds(){
   try{
     // 依序載入：先抓 ESPN + 傷兵/B2B/Polymarket，再抓 Odds API
     await Promise.all([loadESPNScores(), loadRealTimeData()]);
-    const res=await fetch(`https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${key}&regions=us&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso`);
+    const res=await fetch(`https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${key}&regions=us,eu&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso`);
     if(!res.ok){const e=await res.json();throw new Error(e.message||`HTTP ${res.status}`)}
     processOdds(await res.json());
     setStatus('odds','','已更新 '+new Date().toLocaleTimeString('zh-TW'));
@@ -1376,6 +1376,84 @@ function twDateLabel(dateStr){
   const [,m,d]=dateStr.split('-');
   const label=`${parseInt(m)}/${parseInt(d)}`;
   return dateStr===todayStr?`今天 ${label}`:label;
+}
+
+// ── Sharp 優先的 bookmaker 解析器
+// 優先順序：Betfair Exchange → Pinnacle → 其他（取平均）
+// 回傳：{ h2hH, h2hA, spLine, spH, spA, ouLine,   ← Sharp 來源（優先）
+//         bp_sharp, bp_market, sharpEdge,           ← 聰明錢訊號
+//         sharpBook }                               ← 實際用了哪個 Sharp 來源
+const SHARP_BOOKS = ['betfair_ex_best_odds','betfair_ex_uk_ex','pinnacle'];
+function parseBookmakers(bookmakers, hEn, aEn){
+  let sharpH=null, sharpA=null, sharpSpLine=null, sharpSpH=null, sharpSpA=null, sharpOuLine=null, sharpBook=null;
+  // 收集所有 bookmaker 的 h2h，用來算市場平均
+  const allH2H=[], allSpreads=[];
+
+  // 第一輪：找 Sharp 賠率（Betfair / Pinnacle）
+  for(const preferred of SHARP_BOOKS){
+    const bk = bookmakers.find(b=>b.key===preferred);
+    if(!bk) continue;
+    let foundH2H=false, foundSpread=false;
+    for(const mk of (bk.markets||[])){
+      if(mk.key==='h2h'){
+        const ho=mk.outcomes.find(o=>normTeam(o.name)===hEn);
+        const ao=mk.outcomes.find(o=>normTeam(o.name)===aEn);
+        if(ho&&ao){ sharpH=ho.price; sharpA=ao.price; foundH2H=true; }
+      }
+      if(mk.key==='spreads'){
+        const ho=mk.outcomes.find(o=>normTeam(o.name)===hEn);
+        const ao=mk.outcomes.find(o=>normTeam(o.name)===aEn);
+        if(ho&&ao){ sharpSpLine=ho.point; sharpSpH=ho.price; sharpSpA=ao.price; foundSpread=true; }
+      }
+      if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');if(ov)sharpOuLine=ov.point;}
+    }
+    if(foundH2H){ sharpBook=bk.title||preferred; break; } // 找到 Sharp 來源即停
+  }
+
+  // 第二輪：所有 bookmaker 算市場平均（含 Sharp，不排除）
+  for(const bk of bookmakers){
+    for(const mk of (bk.markets||[])){
+      if(mk.key==='h2h'){
+        const ho=mk.outcomes.find(o=>normTeam(o.name)===hEn);
+        const ao=mk.outcomes.find(o=>normTeam(o.name)===aEn);
+        if(ho&&ao) allH2H.push({h:ho.price, a:ao.price});
+      }
+      if(mk.key==='spreads'){
+        const ho=mk.outcomes.find(o=>normTeam(o.name)===hEn);
+        const ao=mk.outcomes.find(o=>normTeam(o.name)===aEn);
+        if(ho&&ao&&!allSpreads.length) allSpreads.push({line:ho.point, h:ho.price, a:ao.price});
+      }
+    }
+  }
+
+  // 若沒有 Sharp 來源，fallback 到第一個有資料的 bookmaker
+  if(!sharpH && allH2H.length){
+    sharpH = allH2H[0].h; sharpA = allH2H[0].a; sharpBook = 'market';
+  }
+  if(!sharpSpLine && allSpreads.length){
+    sharpSpLine=allSpreads[0].line; sharpSpH=allSpreads[0].h; sharpSpA=allSpreads[0].a;
+  }
+
+  // 計算去除 juice 後的概率
+  const bp_sharp = sharpH ? (1/sharpH)/((1/sharpH)+(1/sharpA)) : null;
+
+  // 市場平均概率（多家 bookmaker 去 juice 後平均）
+  let bp_market = null;
+  if(allH2H.length){
+    const probs = allH2H.map(x => (1/x.h)/((1/x.h)+(1/x.a)));
+    bp_market = probs.reduce((s,p)=>s+p, 0) / probs.length;
+  }
+
+  // Sharp Edge：正值 = 交易所比大眾更看好主場；負值 = 更看好客場
+  // 超過 ±0.04（4%）才算有意義的分歧
+  const sharpEdge = (bp_sharp!=null && bp_market!=null) ? bp_sharp - bp_market : null;
+
+  return {
+    h2hH: sharpH, h2hA: sharpA,
+    spLine: sharpSpLine, spH: sharpSpH, spA: sharpSpA, ouLine: sharpOuLine,
+    bp_sharp, bp_market, sharpEdge, sharpBook,
+    bookmakerCount: allH2H.length,
+  };
 }
 
 function processOdds(oddsData){
@@ -1412,32 +1490,21 @@ function processOdds(oddsData){
     const oddsKey=`${hEn}|${aEn}`;
     const oddGame=oddsMap[oddsKey];
     let h2hH=null,h2hA=null,spLine=null,spH=null,spA=null,ouLine=null;
+    let bp_sharp=null, bp_market=null, sharpEdge=null, sharpBook=null;
     if(oddGame){
-      // oddGame 裡的隊名可能是原始名稱（如 LA Clippers），用正規化後的名稱比對
-      const origH=oddGame.home_team, origA=oddGame.away_team;
-      for(const bk of(oddGame.bookmakers||[])){
-        for(const mk of(bk.markets||[])){
-          if(mk.key==='h2h'){
-            const ho=mk.outcomes.find(o=>normTeam(o.name)===hEn);
-            const ao=mk.outcomes.find(o=>normTeam(o.name)===aEn);
-            if(ho&&ao){h2hH=ho.price;h2hA=ao.price}
-          }
-          if(mk.key==='spreads'){
-            const ho=mk.outcomes.find(o=>normTeam(o.name)===hEn);
-            const ao=mk.outcomes.find(o=>normTeam(o.name)===aEn);
-            if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price}
-          }
-          if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');if(ov)ouLine=ov.point}
-        }
-        break;
-      }
+      const parsed = parseBookmakers(oddGame.bookmakers||[], hEn, aEn);
+      h2hH=parsed.h2hH; h2hA=parsed.h2hA;
+      spLine=parsed.spLine; spH=parsed.spH; spA=parsed.spA; ouLine=parsed.ouLine;
+      bp_sharp=parsed.bp_sharp; bp_market=parsed.bp_market;
+      sharpEdge=parsed.sharpEdge; sharpBook=parsed.sharpBook;
     }
     // 若無賠率，用 ELO 估算
     const h=teamData[hA]||{elo:1400,pts:110,opp:110};
     const a=teamData[aA]||{elo:1400,pts:110,opp:110};
     const eloP=1/(1+Math.pow(10,-(h.elo-a.elo+70)/400));
     const offP=0.5+((h.pts-a.opp)-(a.pts-h.opp))*0.012;
-    const bp=h2hH?((1/h2hH)/((1/h2hH)+(1/h2hA))):eloP;
+    // 優先用 Sharp 賠率（Betfair/Pinnacle）；沒有則 fallback ELO
+    const bp = bp_sharp || (h2hH ? (1/h2hH)/((1/h2hH)+(1/h2hA)) : eloP);
     const pmInfo=getPMProb(hEn);
     const mp=calcModel(hEn,aEn,bp,pmInfo);
     const ms=(mp-0.5)*28;
@@ -1488,6 +1555,8 @@ function processOdds(oddsData){
         aRecentAdj:teamData[aA]?.recent_adj,
         hHomeSt:homeAwayStats[hEn],
         aAwaySt:homeAwayStats[aEn],
+        // Sharp 訊號
+        bp_market, sharpEdge, sharpBook,
         _lockedAt: Date.now(),
         _gameStart: st.getTime(),
       };
@@ -1507,6 +1576,7 @@ function processOdds(oddsData){
       pmInfo:getPMProb(hEn),
       hRecentAdj:teamData[hA]?.recent_adj,aRecentAdj:teamData[aA]?.recent_adj,
       hHomeSt:homeAwayStats[hEn],aAwaySt:homeAwayStats[aEn],
+      bp_market, sharpEdge, sharpBook,
     };
     // 如果進入鎖定期（isLive / isFinal / minutesToStart <= LOCK_MINUTES），
     // 優先從 localStorage 取已持久化的快照，確保不被當下賠率汙染
@@ -1547,6 +1617,8 @@ function processOdds(oddsData){
       snapPmInfo:snap.pmInfo,
       snapHRecentAdj:snap.hRecentAdj, snapARecentAdj:snap.aRecentAdj,
       snapHHomeSt:snap.hHomeSt, snapAAwaySt:snap.aAwaySt,
+      // Sharp 訊號
+      bp_market:snap.bp_market, sharpEdge:snap.sharpEdge, sharpBook:snap.sharpBook,
       timeStr,startTime:st,twDate:twDateStr(st),
       status,isFinal,isLive,statusText,hScore,aScore,actualWinner,predCorrect
     });
@@ -1557,17 +1629,10 @@ function processOdds(oddsData){
     const hEn=game.home_team,aEn=game.away_team;
     if(games.some(g=>g.hEn===hEn&&g.aEn===aEn)) continue;
     const hA=getAbbr(hEn),aA=getAbbr(aEn);
-    let h2hH=null,h2hA=null,spLine=null,spH=null,spA=null,ouLine=null;
-    for(const bk of(game.bookmakers||[])){
-      for(const mk of(bk.markets||[])){
-        if(mk.key==='h2h'){const ho=mk.outcomes.find(o=>o.name===hEn);const ao=mk.outcomes.find(o=>o.name===aEn);if(ho&&ao){h2hH=ho.price;h2hA=ao.price}}
-        if(mk.key==='spreads'){const ho=mk.outcomes.find(o=>o.name===hEn);const ao=mk.outcomes.find(o=>o.name===aEn);if(ho&&ao){spLine=ho.point;spH=ho.price;spA=ao.price}}
-        if(mk.key==='totals'){const ov=mk.outcomes.find(o=>o.name==='Over');if(ov)ouLine=ov.point}
-      }
-      break;
-    }
+    const parsed2 = parseBookmakers(game.bookmakers||[], hEn, aEn);
+    const {h2hH,h2hA,spLine,spH,spA,ouLine,bp_sharp,bp_market,sharpEdge,sharpBook} = parsed2;
     if(!h2hH)continue;
-    const bp=(1/h2hH)/((1/h2hH)+(1/h2hA));
+    const bp = bp_sharp || (1/h2hH)/((1/h2hH)+(1/h2hA));
     const pmInfo=getPMProb(hEn);
     const mp=calcModel(hEn,aEn,bp,pmInfo);const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
@@ -1580,9 +1645,8 @@ function processOdds(oddsData){
     }else{betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds);betType='不讓分';betColor='blue'}
     const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const st=new Date(game.commence_time);
-    // commence_time 是 UTC，new Date() 自動轉台灣時間（UTC+8）
     const timeStr=`${st.getMonth()+1}/${st.getDate()} ${String(st.getHours()).padStart(2,'0')}:${String(st.getMinutes()).padStart(2,'0')} 台灣時間`;
-    games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1,twDate:twDateStr(st),status:'pre',isFinal:false,isLive:false,statusText:'未開始',hScore:0,aScore:0,actualWinner:null,predCorrect:null});
+    games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1,twDate:twDateStr(st),status:'pre',isFinal:false,isLive:false,statusText:'未開始',hScore:0,aScore:0,actualWinner:null,predCorrect:null,bp_market,sharpEdge,sharpBook});
   }
 
   games.sort((a,b)=>a.startTime-b.startTime);
@@ -1792,7 +1856,7 @@ function renderGames(){
       </div>
       <div class="divider"></div>
       <div class="sources" style="grid-template-columns:${pmHPct!==null?'1fr 1fr 1fr':'1fr 1fr'}">
-        <div class="source-card"><div class="source-name">博彩商綜合</div><div class="source-pick">${bkH>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(bkH,100-bkH)}%</div></div>
+        <div class="source-card"><div class="source-name">博彩商綜合${g.sharpBook&&g.sharpBook!=='market'?`<span style="font-size:9px;color:var(--green);margin-left:4px">⚡${g.sharpBook.includes('betfair')?'Betfair':'Pinnacle'}</span>`:''}</div><div class="source-pick">${bkH>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(bkH,100-bkH)}%</div>${g.sharpEdge!=null&&Math.abs(g.sharpEdge)>=0.04?`<span style="font-size:10px;margin-top:3px;display:block;color:${Math.abs(g.sharpEdge)>=0.08?'var(--live)':'var(--amber)'}">${g.sharpEdge>0?`🔺Sharp看好${hZH.slice(-2)}`:`🔻Sharp看好${aZH.slice(-2)}`} ${(Math.abs(g.sharpEdge)*100).toFixed(1)}%</span>`:''}</div>
         <div class="source-card"><div class="source-name">ELO 模型</div><div class="source-pick">${hP>=50?hZH.slice(-2):aZH.slice(-2)}</div><div class="source-prob">${Math.max(hP,aP)}%</div><span class="source-agree ${g.agree?'yes':'no'}">${g.agree?'✅ 方向一致':'⚠️ 方向分歧'}</span></div>
         ${pmHPct!==null?`<div class="source-card" style="border-color:${pmReliable?'rgba(108,63,197,0.3)':'rgba(184,120,0,0.3)'}">
           <div class="source-name" style="color:${pmReliable?'#6c3fc5':'var(--amber)'}">🟣 Polymarket${pmReliable?'':' ⚠️'}</div>
