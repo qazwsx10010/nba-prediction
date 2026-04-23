@@ -221,6 +221,13 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 .filter-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:500;transition:all 0.2s}
 .filter-btn.active{background:var(--green);border-color:var(--green);color:#fff}
 .sort-select{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:6px;font-size:12px;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+.date-filter-bar{display:flex;gap:6px;align-items:center;margin-bottom:1rem;flex-wrap:wrap;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px}
+.date-filter-label{font-size:11px;color:var(--text3);white-space:nowrap;margin-right:2px}
+.date-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:500;transition:all 0.2s;white-space:nowrap}
+.date-btn:hover{border-color:var(--green);color:var(--green)}
+.date-btn.active{background:var(--green);border-color:var(--green);color:#fff;font-weight:700}
+.date-btn.today{border-color:var(--green);color:var(--green)}
+.date-btn.today.active{background:var(--green);color:#fff}
 .section-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
 .section-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--text)}
 .section-count{font-size:11px;color:var(--text3);background:var(--bg3);padding:2px 8px;border-radius:10px;border:1px solid var(--border)}
@@ -379,6 +386,11 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <div class="stat-card"><div class="stat-label">最高期望值</div><div class="stat-val" id="statMaxEV">—</div><div class="stat-sub">本日最佳</div></div>
       <div class="stat-card"><div class="stat-label">來源一致場次</div><div class="stat-val" id="statAgree">—</div><div class="stat-sub">模型＋博彩商同向</div></div>
     </div>
+    <!-- 日期選擇列 -->
+    <div class="date-filter-bar" id="dateFilterBar">
+      <span class="date-filter-label">📅 全日期</span>
+      <div id="dateBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
     <div class="filter-bar">
       <div class="filter-group">
         <button class="filter-btn active" onclick="setFilter('all',this)">全部</button>
@@ -488,6 +500,7 @@ const teamData={SAS:{elo:1903,pts:118.2,opp:105.1,pace:98.2},OKC:{elo:1869,pts:1
 let realInjuries={};  // 真實傷兵
 let b2bStatus={};     // B2B 狀態
 let pmOdds={};        // Polymarket 勝率
+let currentDateFilter='all';  // 日期過濾：'all' 或 'YYYY-M-D' 格式
 
 function getRealInjuries(teamEn){
   const inj=realInjuries[teamEn]||[];
@@ -707,10 +720,10 @@ function loadSnapFromStorage(freezeKey, gameStartTime){
     return raw ? JSON.parse(raw) : null;
   }catch(e){ return null; }
 }
-// 清除超過 7 天的舊快照，避免 localStorage 無限增長
+// 清除超過 3 天的舊快照，避免 localStorage 無限增長
 function cleanOldSnaps(){
   try{
-    const cutoff = Date.now() - 7*24*3600*1000;
+    const cutoff = Date.now() - 3*24*3600*1000;
     Object.keys(localStorage).forEach(k=>{
       if(!k.startsWith('nba_snap_')) return;
       const raw = localStorage.getItem(k);
@@ -1659,7 +1672,7 @@ function processOdds(oddsData){
   const maxEV=todayGames.filter(g=>!g.isFinal).length?Math.max(...todayGames.filter(g=>!g.isFinal).map(g=>g.betEV)):0;
   document.getElementById('statMaxEV').textContent=maxEV>0?`+${maxEV.toFixed(1)}%`:'—';
   document.getElementById('statAgree').textContent=todayGames.filter(g=>g.agree).length;
-  renderAIPicks(todayGames.filter(g=>!g.isFinal&&!g.isLive));renderGames();
+  renderAIPicks(todayGames.filter(g=>!g.isFinal&&!g.isLive));buildDateFilterBar();renderGames();
 }
 
 function renderAIPicks(games){
@@ -1682,8 +1695,50 @@ function renderAIPicks(games){
   });
 }
 
+function buildDateFilterBar(){
+  const todayStr = twDateStr(new Date());
+  // 收集所有出現的日期
+  const dates = [...new Set(allGames.map(g=>g.twDate||todayStr))].sort((a,b)=>a<b?-1:1);
+  const container = document.getElementById('dateBtns');
+  if(!container) return;
+  container.innerHTML='';
+
+  // 「全日期」按鈕
+  const allBtn = document.createElement('button');
+  allBtn.className = 'date-btn' + (currentDateFilter==='all'?' active':'');
+  allBtn.textContent = '全部';
+  allBtn.onclick = ()=>setDateFilter('all', allBtn);
+  container.appendChild(allBtn);
+
+  // 每個日期一個按鈕，顯示 M/D 格式，今天標記「今天」
+  dates.forEach(d=>{
+    const parts = d.split('-');
+    const m = parseInt(parts[1]||0), day = parseInt(parts[2]||0);
+    const isToday = d===todayStr;
+    const label = isToday ? `今天 ${m}/${day}` : `${m}/${day}`;
+    const btn = document.createElement('button');
+    btn.className = 'date-btn' + (isToday?' today':'') + (currentDateFilter===d?' active':'');
+    btn.textContent = label;
+    btn.onclick = ()=>setDateFilter(d, btn);
+    container.appendChild(btn);
+  });
+}
+
+function setDateFilter(dateStr, btn){
+  currentDateFilter = dateStr;
+  document.querySelectorAll('#dateBtns .date-btn').forEach(b=>b.classList.remove('active'));
+  // 「全部」按鈕在 dateBtns 之前，需要另外處理
+  document.querySelectorAll('.date-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGames();
+}
+
 function renderGames(){
   let games=[...allGames];
+  // 日期過濾
+  if(currentDateFilter!=='all'){
+    games=games.filter(g=>g.twDate===currentDateFilter);
+  }
   if(currentFilter==='rec')games=games.filter(g=>g.recLevel==='rec');
   else if(currentFilter==='con')games=games.filter(g=>g.recLevel==='con');
   else if(currentFilter==='agree')games=games.filter(g=>g.agree);
