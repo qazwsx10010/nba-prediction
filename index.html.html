@@ -309,7 +309,7 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 </header>
 <div class="nav-tabs">
   <button class="nav-tab active" onclick="showPage('predict',this)">📋 比賽預測</button>
-  <button class="nav-tab" onclick="showPage('twodds',this)">🇹🇼 台灣運彩分析</button>
+  <button class="nav-tab" onclick="showPage('twodds',this)">📌 Pinnacle 盤口分析</button>
   <button class="nav-tab" onclick="showPage('scores',this)">🏀 即時比分</button>
   <button class="nav-tab" onclick="showPage('backtest',this)">📊 回測績效</button>
 </div>
@@ -342,44 +342,6 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
       <div class="ai-picks" id="aiPicks"></div>
     </div>
 
-    <!-- 串關計算機 -->
-    <div class="parlay-section" id="parlaySection">
-      <div class="parlay-header">
-        <div class="parlay-badge">🎯 串關</div>
-        <div class="parlay-title">串關計算機</div>
-        <div class="parlay-subtitle" id="parlaySubtitle">從下方比賽卡片點「+串關」加入</div>
-        <button onclick="autoOptimalGroups()" style="margin-left:auto;background:linear-gradient(135deg,#0a9e6e,#1a6fd4);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:sans-serif;white-space:nowrap">
-          🤖 自動最優分組
-        </button>
-      </div>
-      <div class="parlay-picks-list" id="parlayPicks">
-        <div class="parlay-empty">尚未加入任何場次<br>點擊比賽卡片下方的「＋加入串關」按鈕</div>
-      </div>
-      <div class="parlay-result" id="parlayResult" style="display:none">
-        <div class="parlay-stat"><div class="parlay-stat-label">串關總賠率</div><div class="parlay-stat-val" id="parlayTotalOdds">—</div><div class="parlay-stat-sub">累計賠率</div></div>
-        <div class="parlay-stat"><div class="parlay-stat-label">期望值</div><div class="parlay-stat-val" id="parlayEV">—</div><div class="parlay-stat-sub">每 100 元</div></div>
-        <div class="parlay-stat"><div class="parlay-stat-label">全中機率</div><div class="parlay-stat-val" id="parlayWinProb">—</div><div class="parlay-stat-sub">預估</div></div>
-      </div>
-      <div id="parlayBetSection" style="display:none">
-        <div class="parlay-bet-row">
-          <div class="parlay-bet-label">下注金額（元）：</div>
-          <input class="parlay-bet-input" type="number" id="parlayBetAmount" value="100" min="1" oninput="updateParlayBet()">
-        </div>
-        <div class="parlay-payout-info">
-          <div>
-            <div class="parlay-payout-label">預期獲利（全中）</div>
-            <div class="parlay-payout-val" id="parlayPayout">—</div>
-          </div>
-          <div style="text-align:right">
-            <div class="parlay-payout-label">淨賺</div>
-            <div class="parlay-payout-val" id="parlayProfit">—</div>
-          </div>
-        </div>
-      </div>
-      <div class="parlay-hint">⚠️ 串關風險較高，建議下注金額不超過單場的 30%</div>
-      <!-- 最優分組結果 -->
-      <div id="optimalGroupsResult" style="display:none;margin-top:12px"></div>
-    </div>
     <div class="stats-row">
       <div class="stat-card"><div class="stat-label">今日場次</div><div class="stat-val" id="statGames">—</div><div class="stat-sub">NBA 賽程</div></div>
       <div class="stat-card"><div class="stat-label">高信心推薦</div><div class="stat-val" id="statRec">—</div><div class="stat-sub">信心度 &gt;80%</div></div>
@@ -410,40 +372,21 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
     </div>
     <div id="gamesContainer"><div class="loading-state"><div class="loading-spinner"></div><div>請輸入 API Key 並點擊「套用並載入」</div></div></div>
 
-    <!-- 歷史預測紀錄 -->
-    <div style="margin-top:2.5rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div class="section-title">📅 歷史預測紀錄</div>
-          <div class="section-count" id="histPredCount">載入中</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="filter-btn active" onclick="filterPredHist('all',this)">全部</button>
-          <button class="filter-btn" onclick="filterPredHist('win',this)">✓ 預測正確</button>
-          <button class="filter-btn" onclick="filterPredHist('loss',this)">✗ 預測失敗</button>
-          <button class="filter-btn" onclick="filterPredHist('pending',this)">⏳ 待確認</button>
-          <button class="filter-btn" onclick="filterPredHist('high',this)">⭐ 高信心</button>
-        </div>
-      </div>
-      <div id="predHistContainer"><div class="loading-state" style="padding:2rem"><div class="loading-spinner"></div></div></div>
-      <button class="show-more-btn" id="predHistMoreBtn" onclick="showMorePredHist()" style="display:none">載入更多 ↓</button>
-    </div>
   </div>
 
   <!-- 台灣運彩分析 -->
   <div class="page" id="page-twodds">
     <div class="tw-header-bar">
       <div>
-        <div class="section-title">🇹🇼 台灣運彩讓分分析</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:4px">每天手動抓取一次，自動對比模型預測分差，計算期望值</div>
+        <div class="section-title">📌 Pinnacle 盤口分析</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">用 Pinnacle/Betfair 去 juice 真實概率作為基準，找出 +EV 下注機會</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div class="tw-quota" id="twQuota">尚未載入</div>
-        <button class="tw-fetch-btn" onclick="fetchTWOdds(false)">🇹🇼 載入今日讓分</button>
-        <button class="tw-fetch-btn" onclick="fetchTWOdds(true)" style="background:var(--amber);margin-left:6px;font-size:12px;padding:7px 14px">🔄 強制重新抓取</button>
+        <div class="tw-quota" id="twQuota">需先載入 Odds API</div>
+        <button class="tw-fetch-btn" onclick="renderPinnacleAnalysis()">📌 分析 Pinnacle 盤口</button>
       </div>
     </div>
-    <div id="twContainer"><div class="loading-state" style="padding:3rem 0"><div style="font-size:3rem;margin-bottom:1rem">🇹🇼</div><div>點擊「抓取今日讓分」按鈕載入台灣運彩資料</div></div></div>
+    <div id="twContainer"><div class="loading-state" style="padding:3rem 0"><div style="font-size:3rem;margin-bottom:1rem">📌</div><div>請先在上方輸入 Odds API Key 載入資料，再點擊「分析 Pinnacle 盤口」</div></div></div>
   </div>
 
   <!-- 即時比分 -->
@@ -458,11 +401,16 @@ main{max-width:1200px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 
   <!-- 回測績效 -->
   <div class="page" id="page-backtest">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+      <div class="section-title">📊 回測績效</div>
+      <button class="tw-fetch-btn" onclick="triggerBackfill()" id="backfillBtn">🔄 手動回填最近 5 天結果</button>
+    </div>
     <div class="perf-stats">
       <div class="perf-card"><div class="perf-label">全部預測勝率</div><div class="perf-val" id="btTotal">—</div><div class="perf-sub" id="btTotalSub">從後端載入中</div></div>
       <div class="perf-card"><div class="perf-label">本週勝率</div><div class="perf-val" id="btWeek">—</div><div class="perf-sub" id="btWeekSub">本週紀錄</div></div>
       <div class="perf-card"><div class="perf-label">高信心 &gt;80%</div><div class="perf-val" id="btHighConf">—</div><div class="perf-sub" id="btHighConfSub">信心度篩選</div></div>
-      <div class="perf-card"><div class="perf-label">讓分盤勝率</div><div class="perf-val warn" id="btSpread">—</div><div class="perf-sub">讓分類型場次</div></div>
+      <div class="perf-card"><div class="perf-label">讓分盤勝率</div><div class="perf-val warn" id="btSpread">—</div><div class="perf-sub" id="btSpreadSub">讓分類型場次</div></div>
+      <div class="perf-card"><div class="perf-label">不讓分勝率</div><div class="perf-val" id="btMoneyline">—</div><div class="perf-sub" id="btMoneylineSub">不讓分場次</div></div>
     </div>
     <!-- 讓分差值準確率分析 -->
     <div style="margin-bottom:1.5rem">
@@ -736,340 +684,23 @@ function cleanOldSnaps(){
   }catch(e){}
 }
 cleanOldSnaps();
-let parlayPicks=[], parlayGameMap={};
-let twGamesData=[]; // 台灣運彩資料（用於最優分組比對）
+let parlayGameMap={};
+// 串關已移除，保留 stub 避免殘留引用報錯
+function addToParlayBtn(){}
+function addToParlayByKey(){}
+function addToParlay(){}
+function removeFromParlay(){}
+function renderParlay(){}
+function updateParlayBet(){}
+function autoOptimalGroups(){}
 
-// ── 自動最優分組（比對台灣運彩開盤）
-function autoOptimalGroups(){
-  var resultDiv=document.getElementById('optimalGroupsResult');
-  var highConf=allGames.filter(function(g){return !g.isFinal&&!g.isLive&&g.conf>=80&&g.betEV>=10;});
-  highConf.sort(function(a,b){return b.conf-a.conf;});
-  var n=highConf.length;
-  if(!n){
-    resultDiv.style.display='block';
-    resultDiv.innerHTML='<div style="color:orange;font-size:12px;padding:8px">⚠️ 目前無高信心場次，請先載入賠率資料</div>';
-    return;
-  }
-  // 比對台灣運彩開盤
-  var withTW=[],withoutTW=[];
-  highConf.forEach(function(g){
-    var twMatch=twGamesData.find(function(tw){return (tw.home_en===g.hEn&&tw.away_en===g.aEn)||(tw.home_en===g.aEn&&tw.away_en===g.hEn);});
-    if(twMatch&&twMatch.spread!==null&&twMatch.spread_home_odds){g._twMatch=twMatch;withTW.push(g);}
-    else withoutTW.push(g);
-  });
-  var twN=withTW.length;
-  var pool=withTW.concat(withoutTW);
-  var avgConf=Math.round(highConf.reduce(function(s,g){return s+g.conf;},0)/n);
-
-  // ── 動態策略計算
-  function calcEV2(a,b){var p=a.conf/100*b.conf/100,o=(a.betOdds||1.72)*(b.betOdds||1.72);return Math.round(p*o*100-100);}
-  function calcEV3(a,b,c){var p=a.conf/100*b.conf/100*c.conf/100,o=(a.betOdds||1.72)*(b.betOdds||1.72)*(c.betOdds||1.72);return Math.round(p*o*100-100);}
-  function calcEV1(a){return Math.round(a.conf/100*(a.betOdds||1.72)*100-100);}
-
-  var strategies=[];
-  // S1: 全部單注（台灣運彩不能下單場，移除此選項）
-  // S2: 全部2串1
-  if(n>=2){
-    var s2ev=0,s2inv=0;
-    for(var i=0;i<Math.floor(n/2);i++){s2ev+=calcEV2(pool[i*2],pool[i*2+1]);s2inv+=100;}
-    if(n%2===1){s2ev+=calcEV1(pool[n-1]);s2inv+=100;}
-    strategies.push({name:Math.floor(n/2)+'組2串1'+(n%2?'+1單注':''),invest:s2inv,ev:s2ev,roi:Math.round(s2ev/s2inv*100),risk:'中低',desc:'CP值最高，資金效率佳'});
-  }
-  // S3: 全部3串1（場次>=3）
-  if(n>=3){
-    var s3ev=0,s3inv=0,t3=Math.floor(n/3),r3=n%3;
-    for(var i=0;i<t3;i++){s3ev+=calcEV3(pool[i*3],pool[i*3+1],pool[i*3+2]);s3inv+=100;}
-    if(r3===2){s3ev+=calcEV2(pool[t3*3],pool[t3*3+1]);s3inv+=100;}
-    else if(r3===1){s3ev+=calcEV1(pool[t3*3]);s3inv+=100;}
-    strategies.push({name:t3+'組3串1'+(r3===2?'+1組2串1':r3===1?'+1單注':''),invest:s3inv,ev:s3ev,roi:Math.round(s3ev/s3inv*100),risk:'中',desc:'賠率更高，適合場次多'});
-  }
-  // S4: 混合（場次>=6：一半3串1+一半2串1）
-  if(n>=6){
-    var half=Math.floor(n/2),s4ev=0,s4inv=0;
-    for(var i=0;i<Math.floor(half/3);i++){s4ev+=calcEV3(pool[i*3],pool[i*3+1],pool[i*3+2]);s4inv+=100;}
-    var remain=pool.slice(Math.floor(half/3)*3);
-    for(var i=0;i<Math.floor(remain.length/2);i++){s4ev+=calcEV2(remain[i*2],remain[i*2+1]);s4inv+=100;}
-    if(remain.length%2){s4ev+=calcEV1(remain[remain.length-1]);s4inv+=100;}
-    strategies.push({name:'混合（3串+2串）',invest:s4inv,ev:s4ev,roi:Math.round(s4ev/s4inv*100),risk:'中',desc:'分散風險，均衡報酬'});
-  }
-  // 計算每個策略的平均全中機率（勝率）
-  strategies.forEach(function(s){
-    // 勝率 = EV期望值反推：EV = winRate*payout - invest → winRate ≈ (ev+invest)/payout
-    // 用平均組數估算
-    var groups2=Math.floor(pool.length/2);
-    var avgWin2=Math.pow(pool.reduce(function(p,g){return p*g.conf/100;},1), 1/Math.max(pool.length,1));
-    if(s.name.indexOf('2串')>=0) s.winRate=Math.pow(avgWin2,2)*100;
-    else if(s.name.indexOf('3串')>=0) s.winRate=Math.pow(avgWin2,3)*100;
-    else if(s.name.indexOf('混合')>=0) s.winRate=Math.pow(avgWin2,2.5)*100;
-    else s.winRate=avgWin2*100;
-    s.winRate=Math.round(s.winRate);
-  });
-  // 勝率優先排序（每組全中機率）
-  // 2串1 勝率最高 → 優先
-  // 只有在場次少時才考慮3串
-  strategies.sort(function(a,b){
-    // 2串1 永遠是第一選擇（除非場次<2）
-    var a2=(a.name.indexOf('2串')>=0&&a.name.indexOf('混合')<0);
-    var b2=(b.name.indexOf('2串')>=0&&b.name.indexOf('混合')<0);
-    if(a2&&!b2) return -1;
-    if(!a2&&b2) return 1;
-    // 其餘依勝率排序
-    return b.winRate-a.winRate;
-  });
-  var best=strategies[0];
-
-  // ── 依最佳策略建立分組
-  var groups=[],gsize=2;
-  if(best.name.indexOf('3串')>=0&&best.name.indexOf('混合')<0) gsize=3;
-  for(var i=0;i<pool.length;i+=gsize){
-    var grp=[];for(var j=0;j<gsize&&i+j<pool.length;j++) grp.push(pool[i+j]);
-    groups.push(grp);
-  }
-
-  // ── 渲染
-  var html='<div style="border-top:1px solid var(--border);padding-top:14px">';
-  // 今日概況
-  html+='<div style="background:var(--bg2);border-radius:10px;padding:12px;margin-bottom:12px">';
-  html+='<div style="font-size:12px;font-weight:700;margin-bottom:8px">📊 今日概況</div>';
-  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">';
-  html+='<div><div style="font-size:10px;color:var(--text3)">高信心場次</div><div style="font-size:24px;font-weight:700;color:var(--green)">'+n+'</div></div>';
-  html+='<div><div style="font-size:10px;color:var(--text3)">台灣已開盤</div><div style="font-size:24px;font-weight:700;color:'+(twN>0?'var(--green)':'orange')+'">'+twN+'</div></div>';
-  html+='<div><div style="font-size:10px;color:var(--text3)">平均信心</div><div style="font-size:24px;font-weight:700">'+avgConf+'%</div></div>';
-  html+='</div></div>';
-  // 策略比較
-  html+='<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">💡 策略比較（各注100元）</div>';
-  strategies.forEach(function(s,idx){
-    var isBest=idx===0;
-    var bgColor=isBest?'rgba(10,158,110,0.15)':'var(--bg2)';
-    var bdColor=isBest?'rgba(10,158,110,0.6)':'var(--border)';
-    var tc=isBest?'#fff':'var(--text)';
-    var tc2=isBest?'rgba(255,255,255,0.7)':'var(--text3)';
-    var tc3=isBest?'#7ee8c8':'var(--green)';
-    html+='<div style="background:'+bgColor+';border:2px solid '+bdColor+';border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">';
-    html+='<div><div style="font-size:13px;font-weight:700;color:'+tc+'">'+(isBest?'⭐ ':'')+s.name+'</div>';
-    var winLabel=s.winRate?(' · 每組勝率約'+s.winRate+'%'):'';
-    html+='<div style="font-size:11px;color:'+tc2+';margin-top:3px">'+s.desc+winLabel+'</div></div>';
-    html+='<div style="text-align:right;min-width:100px"><div style="font-size:11px;color:'+tc2+'">投$'+s.invest+'元</div>';
-    html+='<div style="font-size:15px;font-weight:700;color:'+tc3+'">+$'+s.ev+'元</div>';
-    html+='<div style="font-size:12px;color:'+tc3+'">ROI +'+s.roi+'%</div></div></div>';
-  });
-  // 建議
-  html+='<div style="background:linear-gradient(135deg,rgba(10,158,110,0.15),rgba(26,111,212,0.1));border:1px solid rgba(10,158,110,0.4);border-radius:10px;padding:12px;margin:10px 0">';
-  html+='<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">🎯 今日最佳策略：'+best.name+'</div>';
-  html+='<div style="font-size:13px;color:rgba(255,255,255,0.9)">投入 <b style="color:#fff">$'+best.invest+'元</b> → 預期獲利 <b style="color:#7ee8c8">+$'+best.ev+'元</b>（報酬率 +'+best.roi+'%）</div>';
-  html+='<div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:6px">📊 策略理由：2串1每組勝率最高（約'+Math.round(Math.pow(avgConf/100,2)*100)+'%），資金曲線穩定，長期心態最好維持</div>';
-  html+='<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px">'+(twN===0?'⚠️ 台灣運彩尚未開盤，請先載入台灣運彩分析':'✅ '+twN+'場已開盤 · '+(n-twN)+'場待開盤，開盤後確認盤口')+'</div></div>';
-  // 分組明細
-  html+='<div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 分組明細</div>';
-  var totalInvest=0,totalEV2=0;
-  groups.forEach(function(group,idx){
-    // 單場不顯示，改成等待提示
-    if(group.length===1){
-      html+='<div style="background:var(--bg3);border:1px dashed var(--border);border-radius:10px;padding:12px;margin-bottom:6px">';
-      html+='<div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:4px">⏳ 第'+(idx+1)+'組 待配對</div>';
-      html+='<div style="font-size:12px;color:var(--text2)">'+zh(group[0].betTeamEn).slice(-2)+' '+group[0].betType+' | 信心'+group[0].conf+'%</div>';
-      html+='<div style="font-size:11px;color:var(--amber);margin-top:4px">⚠️ 台灣運彩不能下單場，等其他高信心場次開盤後配對成2串1</div>';
-      html+='</div>';
-      return;
-    }
-    totalInvest+=100;
-    var isTW=group.some(function(g){return g._twMatch;});
-    var winProb=group.reduce(function(p,g){return p*g.conf/100;},1);
-    var totalOdds=group.reduce(function(p,g){return p*(g.betOdds||1.72);},1);
-    var ev=Math.round(winProb*totalOdds*100-100);
-    totalEV2+=ev;
-    var bg=isTW?'rgba(10,158,110,0.08)':'var(--bg2)';
-    var bd=isTW?'rgba(10,158,110,0.4)':'var(--border)';
-    html+='<div style="background:'+bg+';border:1px solid '+bd+';border-radius:10px;padding:12px;margin-bottom:8px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-    html+='<span style="font-size:13px;font-weight:700;color:var(--text)">第'+(idx+1)+'組 '+group.length+'串1</span>';
-    html+='<div>'+(isTW?'<span style="background:var(--green);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">✅ 台灣已開</span>':'<span style="background:rgba(184,120,0,0.3);color:var(--amber);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">🔒 未開盤</span>')+'<span style="font-size:12px;font-weight:700;color:var(--green);margin-left:8px">100元→'+Math.round(totalOdds*100)+'元</span></div></div>';
-    group.forEach(function(g){
-      html+='<div style="font-size:12px;color:var(--text);padding:3px 0;border-bottom:1px solid var(--bg3)">▸ <b>'+zh(g.betTeamEn).slice(-2)+'</b> '+g.betType+' &nbsp;<span style="color:var(--text3)">信心 <b style="color:var(--green)">'+g.conf+'%</b> · 賠率 <b>×'+(g.betOdds?g.betOdds.toFixed(2):'1.72')+'</b></span></div>';
-    });
-    html+='<div style="font-size:12px;color:var(--text2);margin-top:6px">全中機率 <b>'+Math.round(winProb*100)+'%</b> &nbsp;·&nbsp; 預期獲利 <b style="color:var(--green)">+'+ev+'元</b></div></div>';
-  });
-  // 彙總
-  html+='<div style="background:rgba(10,158,110,0.2);border:1px solid rgba(10,158,110,0.5);border-radius:10px;padding:14px;display:grid;grid-template-columns:repeat(3,1fr);text-align:center">';
-  html+='<div><div style="font-size:11px;color:rgba(255,255,255,0.7)">總投入</div><div style="font-size:22px;font-weight:700;color:#fff">$'+totalInvest+'</div></div>';
-  html+='<div><div style="font-size:11px;color:rgba(255,255,255,0.7)">預期獲利</div><div style="font-size:22px;font-weight:700;color:#7ee8c8">+$'+totalEV2+'</div></div>';
-  html+='<div><div style="font-size:11px;color:rgba(255,255,255,0.7)">ROI</div><div style="font-size:22px;font-weight:700;color:#7ee8c8">+'+(totalInvest?Math.round(totalEV2/totalInvest*100):0)+'%</div></div>';
-  html+='</div></div>';
-  resultDiv.style.display='block';
-  resultDiv.innerHTML=html;
-  resultDiv.scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-function addToParlayBtn(btn){
-  const teamEn=btn.dataset.teamEn;
-  const teamZH=btn.dataset.teamZh;
-  const betType=btn.dataset.betType;
-  const odds=parseFloat(btn.dataset.odds);
-  const conf=parseInt(btn.dataset.conf);
-  const ev=parseFloat(btn.dataset.ev);
-  addToParlay(teamEn,teamZH,betType,odds,conf,ev);
-}
-
-function addToParlayByKey(key){
-  const d=parlayGameMap[key];
-  if(!d){console.log('找不到串關資料:',key);return;}
-  addToParlay(d.teamEn,d.teamZH,d.betType,d.odds,d.conf,d.ev);
-}
-
-function addToParlay(teamEn, teamZH, betType, odds, conf, ev){
-  // 檢查是否已加入
-  if(parlayPicks.find(p=>p.teamEn===teamEn)){
-    alert(`${teamZH} 已在串關名單中！`);
-    return;
-  }
-  if(parlayPicks.length>=8){
-    alert('串關最多8場！');
-    return;
-  }
-  parlayPicks.push({teamEn, teamZH, betType, odds: parseFloat(odds), conf, ev: parseFloat(ev)});
-  renderParlay();
-  // 滾動到串關區塊
-  document.getElementById('parlaySection').scrollIntoView({behavior:'smooth', block:'start'});
-}
-
-function removeFromParlay(teamEn){
-  parlayPicks=parlayPicks.filter(p=>p.teamEn!==teamEn);
-  renderParlay();
-}
-
-function renderParlay(){
-  const section=document.getElementById('parlaySection');
-  const list=document.getElementById('parlayPicks');
-  const result=document.getElementById('parlayResult');
-  const betSection=document.getElementById('parlayBetSection');
-
-  section.style.display='block';
-
-  if(!parlayPicks.length){
-    list.innerHTML='<div class="parlay-empty">尚未加入任何場次<br>點擊比賽卡片下方的「＋加入串關」按鈕</div>';
-    result.style.display='none';
-    betSection.style.display='none';
-    document.getElementById('parlaySubtitle').textContent='從下方比賽卡片點「+串關」加入';
-    return;
-  }
-
-  // 渲染串關名單
-  list.innerHTML=parlayPicks.map(p=>`
-    <div class="parlay-pick-item">
-      <div class="parlay-pick-info">
-        <div class="parlay-pick-team">${p.teamZH}</div>
-        <div class="parlay-pick-detail">${p.betType} · 信心度 ${p.conf}% · EV ${p.ev>=0?'+':''}${p.ev}%</div>
-      </div>
-      <div class="parlay-pick-odds">×${p.odds.toFixed(2)}</div>
-      <button class="parlay-pick-remove" onclick="removeFromParlay('${p.teamEn}')">×</button>
-    </div>
-  `).join('');
-
-  // 計算串關數據
-  const totalOdds=parlayPicks.reduce((acc,p)=>acc*p.odds, 1);
-  const winProb=parlayPicks.reduce((acc,p)=>acc*(p.conf/100), 1);
-  const ev=(winProb*totalOdds-1)*100;
-  const count=parlayPicks.length;
-
-  document.getElementById('parlayTotalOdds').textContent=`×${totalOdds.toFixed(2)}`;
-  document.getElementById('parlayEV').textContent=`${ev>=0?'+':''}${ev.toFixed(1)}%`;
-  document.getElementById('parlayWinProb').textContent=`${(winProb*100).toFixed(1)}%`;
-  document.getElementById('parlaySubtitle').textContent=`${count} 場串關 · 全中機率 ${(winProb*100).toFixed(1)}%`;
-
-  result.style.display='grid';
-  betSection.style.display='block';
-  updateParlayBet();
-}
-
-function updateParlayBet(){
-  if(!parlayPicks.length) return;
-  const bet=parseFloat(document.getElementById('parlayBetAmount').value)||100;
-  const totalOdds=parlayPicks.reduce((acc,p)=>acc*p.odds, 1);
-  const payout=bet*totalOdds;
-  const profit=payout-bet;
-  document.getElementById('parlayPayout').textContent=`$${payout.toFixed(0)} 元`;
-  document.getElementById('parlayProfit').textContent=`+$${profit.toFixed(0)} 元`;
-}
-let predHistData=[],predHistFilter='all',predHistShowCount=12;
 let histData=[],histFilter='all',histShowCount=20;
 
-async function loadPredHist(){
-  try{
-    const res=await fetch(`${BACKEND}/api/predictions/history?days=90`);
-    predHistData=await res.json();
-    renderPredHist();
-  }catch(e){
-    document.getElementById('predHistContainer').innerHTML='<div class="loading-state" style="color:var(--text3);padding:1.5rem">後端連線失敗，無法載入歷史紀錄</div>';
-  }
-}
-
-function filterPredHist(f,btn){
-  predHistFilter=f;predHistShowCount=12;
-  document.querySelectorAll('#page-predict .filter-btn').forEach(b=>{
-    if(['全部','✓ 預測正確','✗ 預測失敗','⏳ 待確認','⭐ 高信心'].some(t=>b.textContent.includes(t.replace('⭐ ','').replace('✓ ','').replace('✗ ','').replace('⏳ ',''))))
-      b.classList.remove('active');
-  });
-  btn.classList.add('active');
-  renderPredHist();
-}
-function showMorePredHist(){predHistShowCount+=12;renderPredHist()}
-
-function renderPredHist(){
-  let data=[...predHistData];
-  if(predHistFilter==='win') data=data.filter(h=>h.result===true);
-  else if(predHistFilter==='loss') data=data.filter(h=>h.result===false);
-  else if(predHistFilter==='pending') data=data.filter(h=>h.result===null);
-  else if(predHistFilter==='high') data=data.filter(h=>h.confidence>=80);
-
-  const wins=data.filter(h=>h.result===true).length;
-  const settled=data.filter(h=>h.result!==null).length;
-  const pending=data.filter(h=>h.result===null).length;
-  const winRate=settled>0?Math.round(wins/settled*100):0;
-  document.getElementById('histPredCount').textContent=
-    settled>0?`${data.length} 筆・勝率 ${winRate}%（${wins}勝${settled-wins}敗）・待確認 ${pending} 場`:`${data.length} 筆・待確認 ${pending} 場`;
-
-  const shown=data.slice(0,predHistShowCount);
-  const container=document.getElementById('predHistContainer');
-  if(!shown.length){
-    container.innerHTML='<div class="loading-state" style="color:var(--text3);padding:1.5rem">尚無符合條件的歷史紀錄<br><span style="font-size:12px">每天早上8點自動儲存預測，比賽結束後更新結果</span></div>';
-    document.getElementById('predHistMoreBtn').style.display='none';
-    return;
-  }
-  const grid=document.createElement('div');grid.className='pred-hist-grid';
-  shown.forEach(h=>{
-    const resultClass=h.result===true?'win':h.result===false?'loss':'pending';
-    const resultLabel=h.result===true?'✓ 預測正確':h.result===false?'✗ 預測失敗':'⏳ 待確認';
-    const bw=Math.round((h.confidence-50)/50*100);
-    const homeZH=zh(h.home_team),awayZH=zh(h.away_team);
-    const predZH=zh(h.predicted_winner);
-    const actZH=h.actual_winner?zh(h.actual_winner):'—';
-    const score=h.actual_home_score!=null?`${h.actual_home_score} - ${h.actual_away_score}`:'—';
-    const card=document.createElement('div');
-    card.className=`pred-card ${resultClass}`;
-    card.innerHTML=`
-      <div class="pred-card-header">
-        <div class="pred-date">${h.game_date}</div>
-        <div class="pred-result-badge ${resultClass}">${resultLabel}</div>
-      </div>
-      <div class="pred-matchup">${awayZH.slice(-2)} @ ${homeZH.slice(-2)}</div>
-      <div class="pred-rows">
-        <div class="pred-row"><span class="pred-rl">預測勝者</span><span class="pred-rv a">${predZH}</span></div>
-        <div class="pred-row"><span class="pred-rl">下注方式</span><span class="pred-rv">${h.bet_type||'—'}</span></div>
-        <div class="pred-row"><span class="pred-rl">實際勝者</span><span class="pred-rv ${h.result===true?'g':h.result===false?'r':''}">${h.actual_winner?zh(h.actual_winner):'—'}</span></div>
-        <div class="pred-row"><span class="pred-rl">最終比分</span><span class="pred-rv">${h.actual_home_score!=null?`客 ${h.actual_away_score} : 主 ${h.actual_home_score}`:'待確認'}</span></div>
-        ${h.bet_odds?`<div class="pred-row"><span class="pred-rl">賠率</span><span class="pred-rv">${parseFloat(h.bet_odds).toFixed(2)}</span></div>`:''}
-      </div>
-      <div class="pred-conf-bar-wrap">
-        <div class="pred-conf-bar" style="width:${bw}px"></div>
-        <span class="pred-conf-num">信心度 ${h.confidence}%</span>
-      </div>`;
-    grid.appendChild(card);
-  });
-  container.innerHTML='';container.appendChild(grid);
-  const btn=document.getElementById('predHistMoreBtn');
-  btn.style.display=predHistShowCount>=data.length?'none':'block';
-  if(predHistShowCount<data.length) btn.textContent=`載入更多（還有 ${data.length-predHistShowCount} 筆）↓`;
-}
+// predHist 已移除
+function loadPredHist(){}
+function filterPredHist(){}
+function showMorePredHist(){}
+function renderPredHist(){}
 let oddsTimer=null,scoreTimer=null,pmTimer=null;
 let highConfWinRate=null;
 let pmLastUpdated=null;
@@ -1081,8 +712,7 @@ function showPage(id,btn){
   if(id==='scores')loadScores();
   if(id==='backtest')loadBacktest();
   if(id==='twodds'){
-    const cached=getTWCache();
-    if(cached){renderTWOdds(cached.games);if(cached.quota&&cached.quota.day_limit)document.getElementById('twQuota').textContent=`今日額度：${cached.quota.day_used}/${cached.quota.day_limit} 次（快取）`;}
+    if(allGames.length>0) renderPinnacleAnalysis();
   }
 }
 function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderGames()}
@@ -1159,182 +789,63 @@ async function loadStatsFromServer(){
   }catch(e){setStatus('backend','error','後端連線失敗')}
 }
 
-// ── 台灣運彩分析（含 localStorage 快取，避免重複浪費次數）
-function getTWCache(){
-  try{
-    const cached=localStorage.getItem('twOddsCache');
-    if(!cached) return null;
-    const obj=JSON.parse(cached);
-    // 只用今天的快取
-    const today=new Date().toISOString().slice(0,10);
-    if(obj.date===today) return obj;
-    return null;
-  }catch(e){return null}
-}
-function setTWCache(data){
-  try{
-    const today=new Date().toISOString().slice(0,10);
-    localStorage.setItem('twOddsCache',JSON.stringify({date:today,...data}));
-  }catch(e){}
-}
-
-async function fetchTWOdds(forceRefresh=false){
-  // 檢查快取
-  if(!forceRefresh){
-    const cached=getTWCache();
-    if(cached){
-      renderTWOdds(cached.games);
-      if(cached.quota&&cached.quota.day_limit){
-        document.getElementById('twQuota').textContent=`今日額度：${cached.quota.day_used}/${cached.quota.day_limit} 次（快取）`;
-      }
-      return;
-    }
-  }
-  document.getElementById('twContainer').innerHTML='<div class="loading-state"><div class="loading-spinner"></div><div>正在抓取台灣運彩資料...</div></div>';
-  try{
-    const res=await fetch(`${BACKEND}/api/tw-odds`);
-    const data=await res.json();
-    if(data.status!=='ok'){
-      document.getElementById('twContainer').innerHTML=`<div class="error-state">❌ ${data.message}</div>`;
-      return;
-    }
-    // 存入快取
-    setTWCache(data);
-    const quota=data.quota;
-    if(quota&&quota.day_limit) document.getElementById('twQuota').textContent=`今日額度：${quota.day_used}/${quota.day_limit} 次`;
-    renderTWOdds(data.games);
-  }catch(e){
-    document.getElementById('twContainer').innerHTML=`<div class="error-state">❌ 連線失敗：${e.message}</div>`;
-  }
-}
-
-function renderTWOdds(games){
-  twGamesData=games; // 儲存供串關比對用
+// ── Pinnacle 盤口分析（從已載入的 allGames 中提取 Sharp 資料）
+function renderPinnacleAnalysis(){
   const container=document.getElementById('twContainer');
-  if(!games.length){container.innerHTML='<div class="loading-state">今日無 NBA 賽事</div>';return}
+  if(!allGames.length){
+    container.innerHTML='<div class="loading-state" style="padding:3rem 0"><div style="font-size:2rem;margin-bottom:1rem">⚠️</div><div>請先在比賽預測頁載入 Odds API 資料</div></div>';
+    return;
+  }
+  const preGames=allGames.filter(g=>!g.isFinal&&!g.isLive);
+  if(!preGames.length){
+    container.innerHTML='<div class="loading-state">目前無未開始的比賽</div>';
+    return;
+  }
+  // 統計有 Sharp 來源的場次
+  const sharpCount=preGames.filter(g=>g.sharpBook&&g.sharpBook!=='market').length;
+  document.getElementById('twQuota').textContent=`${preGames.length} 場賽事 · ${sharpCount} 場有 Pinnacle/Betfair`;
+
   container.innerHTML='';
   const grid=document.createElement('div');grid.className='tw-games-grid';
 
-  games.forEach(g=>{
-    const hA=getAbbr(g.home_en),aA=getAbbr(g.away_en);
-    const h=teamData[hA]||{elo:1400,pts:110,opp:110};
-    const a=teamData[aA]||{elo:1400,pts:110,opp:110};
-    const eloP=1/(1+Math.pow(10,-(h.elo-a.elo+70)/400));
-    const offP=0.5+((h.pts-a.opp)-(a.pts-h.opp))*0.012;
-    const mp=Math.max(0.05,Math.min(0.95,eloP*0.5+offP*0.4+0.5*0.1));
-    const ms=(mp-0.5)*28;
-    const twSp=g.spread;
-    const hP=Math.round(mp*100),aP=100-hP;
+  // 按 EV 排序（高到低）
+  const sorted=[...preGames].sort((a,b)=>b.betEV-a.betEV);
+
+  sorted.forEach(g=>{
+    const hZH=zh(g.hEn),aZH=zh(g.aEn),betZH=zh(g.betTeamEn);
+    const hP=Math.round(g.mp*100),aP=100-hP;
     const favHome=hP>=aP;
-    const favZH=favHome?zh(g.home_en):zh(g.away_en);
-    const dogZH=favHome?zh(g.away_en):zh(g.home_en);
-    const favP=favHome?hP:aP,dogP=favHome?aP:hP;
+    const favZH=favHome?hZH:aZH, dogZH=favHome?aZH:hZH;
+    const favP=favHome?hP:aP, dogP=favHome?aP:hP;
+    const bkH=Math.round(g.bp*100);
+    const sharpLabel=g.sharpBook==='betfair_ex_eu'?'⚡ Betfair':g.sharpBook==='pinnacle'?'⚡ Pinnacle':'📊 市場平均';
+    const sharpColor=g.sharpBook&&g.sharpBook!=='market'?'var(--green)':'var(--text3)';
+    const isPositiveEV=g.betEV>=0;
 
-    // ── 比賽預測對照（從 allGames 找同場比賽）
-    const matchGame=allGames.find(ag=>
-      (ag.hEn===g.home_en&&ag.aEn===g.away_en)||
-      (ag.hEn===g.away_en&&ag.aEn===g.home_en)
-    );
-    let predictConf=null,predictTeamZH=null,predictRecLevel=null,predictBetType=null,predictEV=null,pmInfo=null;
-    let crossMatch=false,crossMatchText='';
-    if(matchGame){
-      predictConf=matchGame.conf;
-      predictTeamZH=zh(matchGame.betTeamEn);
-      predictRecLevel=matchGame.recLevel;
-      predictBetType=matchGame.betType;
-      predictEV=matchGame.betEV;
-      pmInfo=getPMProb(matchGame.hEn);
-
-      // 判斷台灣運彩建議和比賽預測是否方向一致
-      if(twSp!==null){
-        const diff=ms-twSp;
-        const twBetTeamEn=diff>2?g.home_en:diff<-2?g.away_en:null;
-        if(twBetTeamEn&&matchGame.betTeamEn===twBetTeamEn){
-          crossMatch=true;
-        }
-      }
-      crossMatchText=crossMatch
-        ?`✅ 與比賽預測一致！預測：${predictTeamZH}（信心度 ${predictConf}%）`
-        :`⚠️ 與比賽預測方向不同，請謹慎`;
-    }
-
-    // 判斷推薦等級
-    let level='obs',verdictText='',betText='',betOdds='',betEV=0,betTeamZH='',betType='';
-
-    // ── 計算不讓分 EV（moneyline）
-    let ml_ev=-999, ml_teamZH='', ml_odds=null, ml_type='不讓分';
-    if(g.normal_home && g.normal_away){
-      const mlH=parseFloat(g.normal_home), mlA=parseFloat(g.normal_away);
-      if(mlH>0 && mlA>0){
-        const ml_prob=mp>=0.5?mp:1-mp;
-        ml_teamZH=mp>=0.5?zh(g.home_en):zh(g.away_en);
-        ml_odds=mp>=0.5?mlH:mlA;
-        ml_ev=calcEV(ml_prob, ml_odds);
+    // 計算不讓分 vs 讓分 EV
+    const ml_p=g.mp>=0.5?g.mp:1-g.mp;
+    const ml_o=g.mp>=0.5?g.h2hH:g.h2hA;
+    const ml_ev=ml_o?calcEV(ml_p,ml_o):-999;
+    let sp_ev_display=null;
+    if(g.spLine!==null){
+      const diff=g.ms-g.spLine;
+      const sp_p=Math.min(0.5+Math.abs(diff)*0.025,0.88);
+      if(Math.abs(diff)>=0.5){
+        const sp_o=diff>0?(g.spH||1.72):(g.spA||1.72);
+        sp_ev_display=calcEV(sp_p,sp_o);
       }
     }
 
-    // ── 計算讓分 EV（spread）
-    let sp_ev=-999, sp_teamZH='', sp_odds_val=null, sp_type='', sp_level='obs', sp_verdict='';
-    if(twSp!==null){
-      const diff=ms-twSp;
-      const spreadBetProb=Math.min(0.5+Math.abs(diff)*0.025,0.88);
-      if(diff>2){
-        sp_level='rec';
-        sp_teamZH=zh(g.home_en);sp_type=`讓分 ${twSp} 分`;sp_odds_val=g.spread_home_odds;
-        sp_ev=calcEV(spreadBetProb,parseFloat(sp_odds_val||1.72));
-        sp_verdict=`模型預測主場贏 ${ms.toFixed(1)} 分，高於讓分 ${Math.abs(twSp)} 分，差值 +${diff.toFixed(1)} 分`;
-      } else if(diff<-2){
-        sp_level='rec';
-        sp_teamZH=zh(g.away_en);sp_type=`吃分 +${Math.abs(twSp)} 分`;sp_odds_val=g.spread_away_odds;
-        sp_ev=calcEV(spreadBetProb,parseFloat(sp_odds_val||1.72));
-        sp_verdict=`讓分高於模型預測 ${Math.abs(diff).toFixed(1)} 分，建議反向吃客場`;
-      } else if(Math.abs(diff)>0.5){
-        sp_level='con';
-        if(diff>0){sp_teamZH=zh(g.home_en);sp_type=`讓分 ${twSp} 分`;sp_odds_val=g.spread_home_odds;}
-        else{sp_teamZH=zh(g.away_en);sp_type=`吃分 +${Math.abs(twSp)} 分`;sp_odds_val=g.spread_away_odds;}
-        sp_ev=calcEV(0.5+Math.abs(diff)*0.02,parseFloat(sp_odds_val||1.72));
-        sp_verdict=`輕微優勢，差值 ${diff.toFixed(1)} 分，風險中等`;
-      } else {
-        sp_verdict='讓分與模型接近，無明顯優勢';
-      }
-    }
-
-    // ── 選擇 EV 最高的下注方式
-    if(ml_ev > sp_ev && ml_ev > 0){
-      // 不讓分 EV 更高
-      level = ml_ev>=10 ? 'rec' : ml_ev>=3 ? 'con' : 'obs';
-      betTeamZH=ml_teamZH; betType=ml_type; betOdds=ml_odds;
-      betEV=ml_ev;
-      verdictText=`不讓分 EV +${ml_ev.toFixed(1)}%${sp_ev>-999?` 高於讓分 EV +${sp_ev.toFixed(1)}%`:''} → 直接壓勝負更划算`;
-    } else if(sp_ev > -999 && sp_ev > ml_ev){
-      // 讓分 EV 更高
-      level=sp_level; betTeamZH=sp_teamZH; betType=sp_type; betOdds=sp_odds_val;
-      betEV=sp_ev;
-      verdictText=sp_verdict + (ml_ev>0?` （不讓分 EV +${ml_ev.toFixed(1)}%）`:'');
-    } else if(sp_ev > -999){
-      level=sp_level; betTeamZH=sp_teamZH; betType=sp_type; betOdds=sp_odds_val;
-      betEV=sp_ev;
-      verdictText=sp_verdict||'讓分與模型接近，無明顯優勢';
-    } else if(ml_ev > 0){
-      level = ml_ev>=10 ? 'rec' : ml_ev>=3 ? 'con' : 'obs';
-      betTeamZH=ml_teamZH; betType=ml_type; betOdds=ml_odds;
-      betEV=ml_ev;
-      verdictText=`無讓分資料，不讓分 EV +${ml_ev.toFixed(1)}%`;
-    } else {
-      verdictText=twSp!==null?'讓分與模型接近，不讓分也無優勢 → 觀望':'無讓分資料，不讓分也無優勢';
-    }
-
-    // 如果台灣運彩推薦 + 比賽預測一致 → 升級標籤
-    const finalLevel=crossMatch&&level==='rec'?'rec':level;
-    const recLabel=crossMatch&&level==='rec'?'🏆 強力推薦':level==='rec'?'⭐ 推薦':level==='con'?'🔶 可考慮':'— 觀望';
+    const level=g.betEV>=10?'rec':g.betEV>=0?'con':'obs';
+    const recLabel=g.betEV>=10?'⭐ +EV 推薦':g.betEV>=0?'🔶 正期望值':'— 負期望值';
     const isLight=level==='rec'||level==='con';
 
     const card=document.createElement('div');
-    card.className=`tw-card ${finalLevel}`;
+    card.className=`tw-card ${level}`;
     card.innerHTML=`
       <div class="tw-card-header">
-        <div class="tw-time">${g.time}</div>
-        <div class="tw-rec-badge ${finalLevel}">${recLabel}</div>
+        <div class="tw-time">${g.timeStr}</div>
+        <div class="tw-rec-badge ${level}">${recLabel}</div>
       </div>
       <div class="matchup-prob">
         <div class="mp-team dog" style="flex:${Math.max(dogP,20)}">
@@ -1350,43 +861,33 @@ function renderTWOdds(games){
         </div>
       </div>
       <div class="tw-data-rows">
-        <div class="tw-row"><span class="tw-rl">不讓分賠率</span><span class="tw-rv">主 ${g.normal_home||'—'} / 客 ${g.normal_away||'—'}</span></div>
-        ${ml_ev>-999?`<div class="tw-row"><span class="tw-rl">不讓分 EV</span><span class="tw-rv ${ml_ev>=0?'g':'r'}">${ml_teamZH} ${ml_ev>=0?'+':''}${ml_ev.toFixed(1)}%</span></div>`:''}
-        <div class="tw-row"><span class="tw-rl">讓分盤口</span><span class="tw-rv ${twSp!==null?'a':''}">${twSp!==null?`主場 ${twSp} 分`:'尚無資料'}</span></div>
-        <div class="tw-row"><span class="tw-rl">讓分賠率</span><span class="tw-rv">${twSp!==null?`主 ${g.spread_home_odds} / 客 ${g.spread_away_odds}`:'—'}</span></div>
-        ${sp_ev>-999?`<div class="tw-row"><span class="tw-rl">讓分 EV</span><span class="tw-rv ${sp_ev>=0?'g':'r'}">${sp_teamZH} ${sp_ev>=0?'+':''}${sp_ev.toFixed(1)}%</span></div>`:''}
-        <div class="tw-row"><span class="tw-rl">模型預測分差</span><span class="tw-rv ${ms>=0?'g':'r'}">${ms>=0?'+':''}${ms.toFixed(1)} 分（主場視角）</span></div>
-        <div class="tw-row"><span class="tw-rl">模型 vs 讓分差值</span><span class="tw-rv ${twSp!==null?(ms-twSp>0?'g':'r'):''}">
-          ${twSp!==null?((ms-twSp>0?'+':'')+(ms-twSp).toFixed(1)+' 分'):'—'}
-        </span></div>
-        ${g.total?`<div class="tw-row"><span class="tw-rl">大小分盤口</span><span class="tw-rv">${g.total}（大 ${g.over_odds} / 小 ${g.under_odds}）</span></div>`:''}
-        ${pmInfo?`<div class="tw-row"><span class="tw-rl">🟣 Polymarket</span><span class="tw-rv" style="color:#6c3fc5">${zh(g.home_en).slice(-2)} ${pmInfo.probPct}% · $${pmInfo.volume?.toLocaleString()||'—'}</span></div>`:''}
-        <div class="tw-row"><span class="tw-rl">ELO 評分</span><span class="tw-rv">${zh(g.away_en).slice(-2)} ${teamData[aA]?.elo||'—'} / ${zh(g.home_en).slice(-2)} ${teamData[hA]?.elo||'—'}</span></div>
+        <div class="tw-row"><span class="tw-rl">Sharp 來源</span><span class="tw-rv" style="color:${sharpColor}">${sharpLabel}</span></div>
+        <div class="tw-row"><span class="tw-rl">Sharp 去juice 概率</span><span class="tw-rv">${hZH.slice(-2)} ${bkH}% / ${aZH.slice(-2)} ${100-bkH}%</span></div>
+        ${g.sharpEdge!=null&&Math.abs(g.sharpEdge)>=0.03?`<div class="tw-row"><span class="tw-rl">Sharp vs 市場差</span><span class="tw-rv" style="color:${Math.abs(g.sharpEdge)>=0.06?'var(--live)':'var(--amber)'}">Sharp ${g.sharpEdge>0?`看好${hZH.slice(-2)}`:`看好${aZH.slice(-2)}`} ${(Math.abs(g.sharpEdge)*100).toFixed(1)}%</span></div>`:''}
+        <div class="tw-row"><span class="tw-rl">不讓分賠率</span><span class="tw-rv">${hZH.slice(-2)} ${g.h2hH?.toFixed(2)||'—'} / ${aZH.slice(-2)} ${g.h2hA?.toFixed(2)||'—'}</span></div>
+        ${ml_ev>-999?`<div class="tw-row"><span class="tw-rl">不讓分 EV</span><span class="tw-rv ${ml_ev>=0?'g':'r'}">${(g.mp>=0.5?hZH:aZH).slice(-2)} ${ml_ev>=0?'+':''}${ml_ev.toFixed(1)}%</span></div>`:''}
+        ${g.spLine!==null?`<div class="tw-row"><span class="tw-rl">讓分盤口</span><span class="tw-rv">${hZH.slice(-2)} ${g.spLine} 分</span></div>`:''}
+        ${sp_ev_display!==null?`<div class="tw-row"><span class="tw-rl">讓分 EV</span><span class="tw-rv ${sp_ev_display>=0?'g':'r'}">${sp_ev_display>=0?'+':''}${sp_ev_display.toFixed(1)}%</span></div>`:''}
+        <div class="tw-row"><span class="tw-rl">模型預測分差</span><span class="tw-rv ${g.ms>=0?'g':'r'}">${g.ms>=0?'+':''}${g.ms.toFixed(1)} 分（主場視角）</span></div>
+        <div class="tw-row"><span class="tw-rl">ELO 評分</span><span class="tw-rv">${aZH.slice(-2)} ${teamData[g.aA]?.elo||'—'} / ${hZH.slice(-2)} ${teamData[g.hA]?.elo||'—'}</span></div>
       </div>
-      ${matchGame?`
-      <div style="background:${crossMatch?'var(--green2)':'var(--amber2)'};border-radius:8px;padding:9px 12px;margin-bottom:8px;border:1px solid ${crossMatch?'rgba(10,158,110,0.25)':'rgba(184,120,0,0.25)'}">
-        <div style="font-size:11px;font-weight:700;color:${crossMatch?'var(--green)':'var(--amber)'}">📊 比賽預測對照</div>
-        <div style="font-size:12px;margin-top:4px;color:var(--text2)">${crossMatchText}</div>
-        ${predictConf?`<div style="font-size:11px;color:var(--text3);margin-top:3px">信心度 ${predictConf}% · EV ${predictEV>=0?'+':''}${predictEV?.toFixed(1)}% · ${predictBetType}</div>`:''}
-      </div>`:''}
-      ${level!=='obs'&&betTeamZH?`
+      ${isPositiveEV?`
       <div class="bet-recommend ${level}">
         <div class="bet-top">
           <div>
             <div class="bet-label-sm ${isLight?'light':'dark'}">最佳下注建議</div>
-            <div class="bet-team ${isLight?'light':'dark'}">${betTeamZH} ${betType}</div>
-            <div class="bet-detail ${isLight?'light':'dark'}">${verdictText}</div>
+            <div class="bet-team ${isLight?'light':'dark'}">${betZH} ${g.betType}</div>
+            <div class="bet-detail ${isLight?'light':'dark'}">${g.betType==='不讓分'?'不讓分 EV 最高':'讓分 EV 高於不讓分'} · 純 +EV 策略</div>
           </div>
           <div class="bet-right">
-            <div class="bet-odds-big ${isLight?'light':'dark'}">賠率 ${betOdds||'—'}</div>
-            <div class="bet-ev-text ${isLight?'light':'dark'}">EV ${betEV>=0?'+':''}${betEV.toFixed(1)}%</div>
+            <div class="bet-odds-big ${isLight?'light':'dark'}">賠率 ${g.betOdds?.toFixed(2)||'—'}</div>
+            <div class="bet-ev-text ${isLight?'light':'dark'}">EV +${g.betEV.toFixed(1)}%</div>
           </div>
         </div>
-        ${highConfWinRate&&level==='rec'?`<div style="font-size:11px;color:${isLight?'rgba(255,255,255,0.7)':'var(--text3)'}">歷史高信心勝率 ${highConfWinRate}%</div>`:''}
       </div>`:`
       <div class="bet-recommend obs">
-        <div class="bet-team dark" style="font-size:13px">— 觀望</div>
-        <div class="bet-detail dark">${verdictText}</div>
+        <div class="bet-team dark" style="font-size:13px">— 無正期望值</div>
+        <div class="bet-detail dark">不讓分和讓分 EV 皆為負，建議觀望</div>
       </div>`}`;
     grid.appendChild(card);
   });
@@ -1563,40 +1064,31 @@ function processOdds(oddsData){
     const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
     let betTeamEn,betOdds,betEV,betType,betColor;
-
-    // ── 計算不讓分 EV（moneyline）
-    const ml_prob = mp>=0.5 ? mp : 1-mp;
-    const ml_team = mp>=0.5 ? hEn : aEn;
-    const ml_odds = mp>=0.5 ? h2hH : h2hA;
-    const ml_ev = ml_odds ? calcEV(ml_prob, ml_odds) : -999;
-
-    // ── 計算讓分 EV（spread）
-    let sp_ev = -999, sp_team = null, sp_odds = null, sp_type = '', sp_color = '';
+    // 不讓分 EV
+    const ml_prob=mp>=0.5?mp:1-mp;
+    const ml_team=mp>=0.5?hEn:aEn;
+    const ml_odds=mp>=0.5?h2hH:h2hA;
+    const ml_ev=ml_odds?calcEV(ml_prob,ml_odds):-999;
+    // 讓分 EV
+    let sp_ev=-999,sp_team=null,sp_odds=null,sp_type='',sp_color='';
     if(spLine!==null){
       const diff=ms-spLine;
       const sp_prob=Math.min(0.5+Math.abs(diff)*0.025,0.88);
       if(Math.abs(diff)>=0.5){
         if(diff>0){
-          sp_team=hEn; sp_odds=spH||1.72;
-          sp_ev=calcEV(sp_prob, sp_odds);
-          if(spLine<0){sp_type=`讓分 ${spLine}`;sp_color='green';}
-          else{sp_type=`吃分 +${spLine}`;sp_color='blue';}
+          sp_team=hEn;sp_odds=spH||1.72;sp_ev=calcEV(sp_prob,sp_odds);
+          sp_type=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;sp_color=sp_type.includes('讓分')?'green':'blue';
         } else {
-          sp_team=aEn; sp_odds=spA||1.72;
-          sp_ev=calcEV(sp_prob, sp_odds);
-          if(spLine>0){sp_type=`讓分 -${spLine}`;sp_color='green';}
-          else{sp_type=`吃分 +${Math.abs(spLine)}`;sp_color='blue';}
+          sp_team=aEn;sp_odds=spA||1.72;sp_ev=calcEV(sp_prob,sp_odds);
+          sp_type=spLine>0?`讓分 -${spLine}`:`吃分 +${Math.abs(spLine)}`;sp_color=sp_type.includes('讓分')?'green':'blue';
         }
       }
     }
-
-    // ── 選擇 EV 最高的下注方式
-    if(sp_ev > ml_ev && sp_ev > -999){
-      betTeamEn=sp_team; betOdds=sp_odds; betEV=sp_ev; betType=sp_type; betColor=sp_color;
-    } else {
-      betTeamEn=ml_team; betOdds=ml_odds; betEV=ml_ev>-999?ml_ev:0; betType='不讓分'; betColor='blue';
-    }
-    const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
+    // 選 EV 最高的
+    if(sp_ev>ml_ev&&sp_ev>-999){betTeamEn=sp_team;betOdds=sp_odds;betEV=sp_ev;betType=sp_type;betColor=sp_color;}
+    else{betTeamEn=ml_team;betOdds=ml_odds;betEV=ml_ev>-999?ml_ev:0;betType='不讓分';betColor='blue';}
+    // +EV 才推薦
+    const recLevel=betEV>=10?'rec':betEV>=0?'con':'obs';
     const freezeKey=`${hEn}|${aEn}`;
     const minutesToStart = (st - new Date()) / 60000; // 正數=還沒開賽，負數=已過開賽時間
 
@@ -1698,24 +1190,15 @@ function processOdds(oddsData){
     const mp=calcModel(hEn,aEn,bp,pmInfo);const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
     let betTeamEn,betOdds,betEV,betType,betColor;
-    // 不讓分 EV
-    const ml2_prob=mp>=0.5?mp:1-mp;
-    const ml2_team=mp>=0.5?hEn:aEn;
-    const ml2_odds=mp>=0.5?h2hH:h2hA;
-    const ml2_ev=ml2_odds?calcEV(ml2_prob,ml2_odds):-999;
-    // 讓分 EV
-    let sp2_ev=-999,sp2_team=null,sp2_odds=null,sp2_type='',sp2_color='';
-    if(spLine!==null){
-      const diff2=ms-spLine;
-      const sp2_prob=Math.min(0.5+Math.abs(diff2)*0.025,0.88);
-      if(Math.abs(diff2)>=0.5){
-        if(diff2>0){sp2_team=hEn;sp2_odds=spH||1.72;sp2_ev=calcEV(sp2_prob,sp2_odds);sp2_type=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;sp2_color=sp2_type.includes('讓分')?'green':'blue'}
-        else{sp2_team=aEn;sp2_odds=spA||1.72;sp2_ev=calcEV(sp2_prob,sp2_odds);const awSp=-spLine;sp2_type=awSp<0?`讓分 ${awSp}`:`吃分 +${awSp}`;sp2_color=sp2_type.includes('讓分')?'green':'blue'}
-      }
-    }
-    if(sp2_ev>ml2_ev&&sp2_ev>-999){betTeamEn=sp2_team;betOdds=sp2_odds;betEV=sp2_ev;betType=sp2_type;betColor=sp2_color}
-    else{betTeamEn=ml2_team;betOdds=ml2_odds;betEV=ml2_ev>-999?ml2_ev:0;betType='不讓分';betColor='blue'}
-    const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
+    const ml2p=mp>=0.5?mp:1-mp,ml2t=mp>=0.5?hEn:aEn,ml2o=mp>=0.5?h2hH:h2hA;
+    const ml2ev=ml2o?calcEV(ml2p,ml2o):-999;
+    let sp2ev=-999,sp2t=null,sp2o=null,sp2ty='',sp2c='';
+    if(spLine!==null){const d2=ms-spLine;const sp2p=Math.min(0.5+Math.abs(d2)*0.025,0.88);
+      if(Math.abs(d2)>=0.5){if(d2>0){sp2t=hEn;sp2o=spH||1.72;sp2ev=calcEV(sp2p,sp2o);sp2ty=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;sp2c=sp2ty.includes('讓分')?'green':'blue'}
+      else{sp2t=aEn;sp2o=spA||1.72;sp2ev=calcEV(sp2p,sp2o);const aw=-spLine;sp2ty=aw<0?`讓分 ${aw}`:`吃分 +${aw}`;sp2c=sp2ty.includes('讓分')?'green':'blue'}}}
+    if(sp2ev>ml2ev&&sp2ev>-999){betTeamEn=sp2t;betOdds=sp2o;betEV=sp2ev;betType=sp2ty;betColor=sp2c}
+    else{betTeamEn=ml2t;betOdds=ml2o;betEV=ml2ev>-999?ml2ev:0;betType='不讓分';betColor='blue'}
+    const recLevel=betEV>=10?'rec':betEV>=0?'con':'obs';
     const st=new Date(game.commence_time);
     const timeStr=`${st.getMonth()+1}/${st.getDate()} ${String(st.getHours()).padStart(2,'0')}:${String(st.getMinutes()).padStart(2,'0')} 台灣時間`;
     games.push({hEn,aEn,hA,aA,mp,bp,h2hH,h2hA,spLine,spH,spA,ouLine,ms,conf,betTeamEn,betOdds,betEV,betType,betColor,recLevel,timeStr,startTime:st,agree:Math.abs(mp-bp)<0.1,twDate:twDateStr(st),status:'pre',isFinal:false,isLive:false,statusText:'未開始',hScore:0,aScore:0,actualWinner:null,predCorrect:null,bp_market,sharpEdge,sharpBook});
@@ -1990,11 +1473,6 @@ function renderGames(){
         <div><div class="bet-label">最佳下注建議</div><div class="bet-val">${betZH} ${g.betType}</div></div>
         <div class="bet-right"><div class="bet-odds">賠率 ${g.betOdds?.toFixed(2)||'—'}</div><div class="bet-ev">期望值 ${g.betEV>=0?'+':''}${g.betEV.toFixed(1)}%</div></div>
       </div>
-      ${!g.isFinal&&!g.isLive&&g.betOdds?(()=>{
-        const pKey=g.betTeamEn.replace(/\s/g,'_');
-        parlayGameMap[pKey]={teamEn:g.betTeamEn,teamZH:betZH,betType:g.betType,odds:parseFloat(g.betOdds?.toFixed(2)||1.72),conf:g.conf,ev:parseFloat(g.betEV?.toFixed(1)||0)};
-        return `<button class="add-parlay-btn" onclick="addToParlayByKey('${pKey}')">＋ 加入串關（賠率 ${g.betOdds?.toFixed(2)||'—'}）</button>`;
-      })():''}
       ${!g.isFinal&&!g.isLive?(()=>{
         const now=new Date();
         const gameTime=g.startTime;
@@ -2073,11 +1551,25 @@ function renderScores(events){
   c.innerHTML='';c.appendChild(grid);
 }
 
+async function triggerBackfill(){
+  const btn=document.getElementById('backfillBtn');
+  btn.textContent='⏳ 回填中...';btn.disabled=true;
+  try{
+    const res=await fetch(`${BACKEND}/api/trigger/backfill`,{method:'POST'});
+    const data=await res.json();
+    btn.textContent=`✅ 回填完成（${data.updated||0} 筆）`;
+    setTimeout(()=>{btn.textContent='🔄 手動回填最近 5 天結果';btn.disabled=false;},3000);
+    loadBacktest();
+  }catch(e){
+    btn.textContent='❌ 回填失敗';btn.disabled=false;
+    setTimeout(()=>{btn.textContent='🔄 手動回填最近 5 天結果';},3000);
+  }
+}
+
 async function loadBacktest(){
   const tbody=document.getElementById('histBody');
   tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text3)"><div class="loading-spinner" style="margin:0 auto 0.5rem"></div>從後端載入...</td></tr>';
   try{
-    // 先抓統計
     const statsRes=await fetch(`${BACKEND}/api/stats`);
     if(!statsRes.ok) throw new Error(`stats API 錯誤 ${statsRes.status}`);
     const stats=await statsRes.json();
@@ -2089,17 +1581,25 @@ async function loadBacktest(){
     document.getElementById('btHighConf').textContent=hc.total?hc.rate+'%':'—';
     document.getElementById('btHighConfSub').textContent=hc.total?`${hc.wins}勝 ${hc.total-hc.wins}敗`:'尚無';
 
-    // 再抓歷史紀錄
     const histRes=await fetch(`${BACKEND}/api/predictions/history?days=60`);
     if(!histRes.ok) throw new Error(`history API 錯誤 ${histRes.status}`);
     histData=await histRes.json();
 
-    const spread=histData.filter(h=>h.bet_type&&h.bet_type.includes('讓分')&&h.result!==null);
-    document.getElementById('btSpread').textContent=spread.length?Math.round(spread.filter(h=>h.result).length/spread.length*100)+'%':'—';
+    // 讓分勝率
+    const spread=histData.filter(h=>h.bet_type&&(h.bet_type.includes('讓分')||h.bet_type.includes('吃分'))&&h.result!==null);
+    const spreadWins=spread.filter(h=>h.result).length;
+    document.getElementById('btSpread').textContent=spread.length?Math.round(spreadWins/spread.length*100)+'%':'—';
+    document.getElementById('btSpreadSub').textContent=spread.length?`${spreadWins}勝 ${spread.length-spreadWins}敗`:'尚無';
+    // 不讓分勝率
+    const ml=histData.filter(h=>h.bet_type&&h.bet_type.includes('不讓分')&&h.result!==null);
+    const mlWins=ml.filter(h=>h.result).length;
+    document.getElementById('btMoneyline').textContent=ml.length?Math.round(mlWins/ml.length*100)+'%':'—';
+    document.getElementById('btMoneylineSub').textContent=ml.length?`${mlWins}勝 ${ml.length-mlWins}敗`:'尚無';
+
     renderSpreadAnalysis();
     renderHist();
   }catch(e){
-    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">後端連線失敗：${e.message}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">後端連線失敗：${e.message}<br><br><span style="font-size:12px;color:var(--text3)">請確認後端是否運行中，或點擊「手動回填」按鈕嘗試</span></td></tr>`;
     console.error('loadBacktest error:',e);
   }
 }
