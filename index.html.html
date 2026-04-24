@@ -1260,30 +1260,68 @@ function renderTWOdds(games){
 
     // 判斷推薦等級
     let level='obs',verdictText='',betText='',betOdds='',betEV=0,betTeamZH='',betType='';
+
+    // ── 計算不讓分 EV（moneyline）
+    let ml_ev=-999, ml_teamZH='', ml_odds=null, ml_type='不讓分';
+    if(g.normal_home && g.normal_away){
+      const mlH=parseFloat(g.normal_home), mlA=parseFloat(g.normal_away);
+      if(mlH>0 && mlA>0){
+        const ml_prob=mp>=0.5?mp:1-mp;
+        ml_teamZH=mp>=0.5?zh(g.home_en):zh(g.away_en);
+        ml_odds=mp>=0.5?mlH:mlA;
+        ml_ev=calcEV(ml_prob, ml_odds);
+      }
+    }
+
+    // ── 計算讓分 EV（spread）
+    let sp_ev=-999, sp_teamZH='', sp_odds_val=null, sp_type='', sp_level='obs', sp_verdict='';
     if(twSp!==null){
       const diff=ms-twSp;
       const spreadBetProb=Math.min(0.5+Math.abs(diff)*0.025,0.88);
       if(diff>2){
-        level='rec';
-        betTeamZH=zh(g.home_en);betType=`讓分 ${twSp} 分`;betOdds=g.spread_home_odds;
-        betEV=calcEV(spreadBetProb,parseFloat(betOdds||1.72));
-        verdictText=`模型預測主場贏 ${ms.toFixed(1)} 分，高於讓分 ${Math.abs(twSp)} 分，差值 +${diff.toFixed(1)} 分`;
+        sp_level='rec';
+        sp_teamZH=zh(g.home_en);sp_type=`讓分 ${twSp} 分`;sp_odds_val=g.spread_home_odds;
+        sp_ev=calcEV(spreadBetProb,parseFloat(sp_odds_val||1.72));
+        sp_verdict=`模型預測主場贏 ${ms.toFixed(1)} 分，高於讓分 ${Math.abs(twSp)} 分，差值 +${diff.toFixed(1)} 分`;
       } else if(diff<-2){
-        level='rec';
-        betTeamZH=zh(g.away_en);betType=`吃分 +${Math.abs(twSp)} 分`;betOdds=g.spread_away_odds;
-        betEV=calcEV(spreadBetProb,parseFloat(betOdds||1.72));
-        verdictText=`讓分高於模型預測 ${Math.abs(diff).toFixed(1)} 分，建議反向吃客場`;
+        sp_level='rec';
+        sp_teamZH=zh(g.away_en);sp_type=`吃分 +${Math.abs(twSp)} 分`;sp_odds_val=g.spread_away_odds;
+        sp_ev=calcEV(spreadBetProb,parseFloat(sp_odds_val||1.72));
+        sp_verdict=`讓分高於模型預測 ${Math.abs(diff).toFixed(1)} 分，建議反向吃客場`;
       } else if(Math.abs(diff)>0.5){
-        level='con';
-        if(diff>0){betTeamZH=zh(g.home_en);betType=`讓分 ${twSp} 分`;betOdds=g.spread_home_odds;}
-        else{betTeamZH=zh(g.away_en);betType=`吃分 +${Math.abs(twSp)} 分`;betOdds=g.spread_away_odds;}
-        betEV=calcEV(0.5+Math.abs(diff)*0.02,parseFloat(betOdds||1.72));
-        verdictText=`輕微優勢，差值 ${diff.toFixed(1)} 分，風險中等`;
+        sp_level='con';
+        if(diff>0){sp_teamZH=zh(g.home_en);sp_type=`讓分 ${twSp} 分`;sp_odds_val=g.spread_home_odds;}
+        else{sp_teamZH=zh(g.away_en);sp_type=`吃分 +${Math.abs(twSp)} 分`;sp_odds_val=g.spread_away_odds;}
+        sp_ev=calcEV(0.5+Math.abs(diff)*0.02,parseFloat(sp_odds_val||1.72));
+        sp_verdict=`輕微優勢，差值 ${diff.toFixed(1)} 分，風險中等`;
       } else {
-        level='obs';verdictText='讓分與模型接近，無明顯優勢';
+        sp_verdict='讓分與模型接近，無明顯優勢';
       }
+    }
+
+    // ── 選擇 EV 最高的下注方式
+    if(ml_ev > sp_ev && ml_ev > 0){
+      // 不讓分 EV 更高
+      level = ml_ev>=10 ? 'rec' : ml_ev>=3 ? 'con' : 'obs';
+      betTeamZH=ml_teamZH; betType=ml_type; betOdds=ml_odds;
+      betEV=ml_ev;
+      verdictText=`不讓分 EV +${ml_ev.toFixed(1)}%${sp_ev>-999?` 高於讓分 EV +${sp_ev.toFixed(1)}%`:''} → 直接壓勝負更划算`;
+    } else if(sp_ev > -999 && sp_ev > ml_ev){
+      // 讓分 EV 更高
+      level=sp_level; betTeamZH=sp_teamZH; betType=sp_type; betOdds=sp_odds_val;
+      betEV=sp_ev;
+      verdictText=sp_verdict + (ml_ev>0?` （不讓分 EV +${ml_ev.toFixed(1)}%）`:'');
+    } else if(sp_ev > -999){
+      level=sp_level; betTeamZH=sp_teamZH; betType=sp_type; betOdds=sp_odds_val;
+      betEV=sp_ev;
+      verdictText=sp_verdict||'讓分與模型接近，無明顯優勢';
+    } else if(ml_ev > 0){
+      level = ml_ev>=10 ? 'rec' : ml_ev>=3 ? 'con' : 'obs';
+      betTeamZH=ml_teamZH; betType=ml_type; betOdds=ml_odds;
+      betEV=ml_ev;
+      verdictText=`無讓分資料，不讓分 EV +${ml_ev.toFixed(1)}%`;
     } else {
-      verdictText='無讓分資料';
+      verdictText=twSp!==null?'讓分與模型接近，不讓分也無優勢 → 觀望':'無讓分資料，不讓分也無優勢';
     }
 
     // 如果台灣運彩推薦 + 比賽預測一致 → 升級標籤
@@ -1313,8 +1351,10 @@ function renderTWOdds(games){
       </div>
       <div class="tw-data-rows">
         <div class="tw-row"><span class="tw-rl">不讓分賠率</span><span class="tw-rv">主 ${g.normal_home||'—'} / 客 ${g.normal_away||'—'}</span></div>
+        ${ml_ev>-999?`<div class="tw-row"><span class="tw-rl">不讓分 EV</span><span class="tw-rv ${ml_ev>=0?'g':'r'}">${ml_teamZH} ${ml_ev>=0?'+':''}${ml_ev.toFixed(1)}%</span></div>`:''}
         <div class="tw-row"><span class="tw-rl">讓分盤口</span><span class="tw-rv ${twSp!==null?'a':''}">${twSp!==null?`主場 ${twSp} 分`:'尚無資料'}</span></div>
         <div class="tw-row"><span class="tw-rl">讓分賠率</span><span class="tw-rv">${twSp!==null?`主 ${g.spread_home_odds} / 客 ${g.spread_away_odds}`:'—'}</span></div>
+        ${sp_ev>-999?`<div class="tw-row"><span class="tw-rl">讓分 EV</span><span class="tw-rv ${sp_ev>=0?'g':'r'}">${sp_teamZH} ${sp_ev>=0?'+':''}${sp_ev.toFixed(1)}%</span></div>`:''}
         <div class="tw-row"><span class="tw-rl">模型預測分差</span><span class="tw-rv ${ms>=0?'g':'r'}">${ms>=0?'+':''}${ms.toFixed(1)} 分（主場視角）</span></div>
         <div class="tw-row"><span class="tw-rl">模型 vs 讓分差值</span><span class="tw-rv ${twSp!==null?(ms-twSp>0?'g':'r'):''}">
           ${twSp!==null?((ms-twSp>0?'+':'')+(ms-twSp).toFixed(1)+' 分'):'—'}
@@ -1523,30 +1563,38 @@ function processOdds(oddsData){
     const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
     let betTeamEn,betOdds,betEV,betType,betColor;
+
+    // ── 計算不讓分 EV（moneyline）
+    const ml_prob = mp>=0.5 ? mp : 1-mp;
+    const ml_team = mp>=0.5 ? hEn : aEn;
+    const ml_odds = mp>=0.5 ? h2hH : h2hA;
+    const ml_ev = ml_odds ? calcEV(ml_prob, ml_odds) : -999;
+
+    // ── 計算讓分 EV（spread）
+    let sp_ev = -999, sp_team = null, sp_odds = null, sp_type = '', sp_color = '';
     if(spLine!==null){
       const diff=ms-spLine;
-      if(Math.abs(diff)<0.5){
-        betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;
-        betEV=calcEV(mp>=0.5?mp:1-mp,betOdds||1.5);betType='不讓分';betColor='blue';
-      } else if(diff>0){
-        // 模型認為主場值得押 → 下注主場讓分盤
-        betTeamEn=hEn;betOdds=spH||1.72;
-        betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);
-        if(spLine<0){betType=`讓分 ${spLine}`;betColor='green';}  // 主場讓分（強）
-        else{betType=`吃分 +${spLine}`;betColor='blue';}          // 主場吃分（弱）
-      } else {
-        // 模型認為客場值得押 → 下注客場讓分盤
-        betTeamEn=aEn;betOdds=spA||1.72;
-        betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);
-        // 客場的讓分 = 主場讓分取反
-        // spLine=+13(主場吃分) → 客場讓出13分 → 客場讓分 = 綠色
-        // spLine=-13(主場讓分) → 客場吃進13分 → 客場吃分 = 藍色
-        if(spLine>0){betType=`讓分 -${spLine}`;betColor='green';}  // 客場讓分（強）
-        else{betType=`吃分 +${Math.abs(spLine)}`;betColor='blue';} // 客場吃分（弱）
+      const sp_prob=Math.min(0.5+Math.abs(diff)*0.025,0.88);
+      if(Math.abs(diff)>=0.5){
+        if(diff>0){
+          sp_team=hEn; sp_odds=spH||1.72;
+          sp_ev=calcEV(sp_prob, sp_odds);
+          if(spLine<0){sp_type=`讓分 ${spLine}`;sp_color='green';}
+          else{sp_type=`吃分 +${spLine}`;sp_color='blue';}
+        } else {
+          sp_team=aEn; sp_odds=spA||1.72;
+          sp_ev=calcEV(sp_prob, sp_odds);
+          if(spLine>0){sp_type=`讓分 -${spLine}`;sp_color='green';}
+          else{sp_type=`吃分 +${Math.abs(spLine)}`;sp_color='blue';}
+        }
       }
-    }else{
-      betTeamEn=mp>=0.5?hEn:aEn;betOdds=h2hH?(mp>=0.5?h2hH:h2hA):null;
-      betEV=betOdds?calcEV(mp>=0.5?mp:1-mp,betOdds):0;betType='不讓分';betColor='blue';
+    }
+
+    // ── 選擇 EV 最高的下注方式
+    if(sp_ev > ml_ev && sp_ev > -999){
+      betTeamEn=sp_team; betOdds=sp_odds; betEV=sp_ev; betType=sp_type; betColor=sp_color;
+    } else {
+      betTeamEn=ml_team; betOdds=ml_odds; betEV=ml_ev>-999?ml_ev:0; betType='不讓分'; betColor='blue';
     }
     const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const freezeKey=`${hEn}|${aEn}`;
@@ -1650,12 +1698,23 @@ function processOdds(oddsData){
     const mp=calcModel(hEn,aEn,bp,pmInfo);const ms=(mp-0.5)*28;
     const conf=Math.max(Math.round(mp*100),Math.round((1-mp)*100));
     let betTeamEn,betOdds,betEV,betType,betColor;
+    // 不讓分 EV
+    const ml2_prob=mp>=0.5?mp:1-mp;
+    const ml2_team=mp>=0.5?hEn:aEn;
+    const ml2_odds=mp>=0.5?h2hH:h2hA;
+    const ml2_ev=ml2_odds?calcEV(ml2_prob,ml2_odds):-999;
+    // 讓分 EV
+    let sp2_ev=-999,sp2_team=null,sp2_odds=null,sp2_type='',sp2_color='';
     if(spLine!==null){
-      const diff=ms-spLine;
-      if(Math.abs(diff)<0.5){betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds);betType='不讓分';betColor='blue'}
-      else if(diff>0){betTeamEn=hEn;betOdds=spH||1.72;betEV=calcEV(Math.min(0.5+diff*0.025,0.9),betOdds);betType=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;betColor=betType.includes('讓分')?'green':'blue'}
-      else{betTeamEn=aEn;betOdds=spA||1.72;betEV=calcEV(Math.min(0.5+Math.abs(diff)*0.025,0.9),betOdds);const awSp=-spLine;betType=awSp<0?`讓分 ${awSp}`:`吃分 +${awSp}`;betColor=betType.includes('讓分')?'green':'blue'}
-    }else{betTeamEn=mp>=0.5?hEn:aEn;betOdds=mp>=0.5?h2hH:h2hA;betEV=calcEV(mp>=0.5?mp:1-mp,betOdds);betType='不讓分';betColor='blue'}
+      const diff2=ms-spLine;
+      const sp2_prob=Math.min(0.5+Math.abs(diff2)*0.025,0.88);
+      if(Math.abs(diff2)>=0.5){
+        if(diff2>0){sp2_team=hEn;sp2_odds=spH||1.72;sp2_ev=calcEV(sp2_prob,sp2_odds);sp2_type=spLine<0?`讓分 ${spLine}`:`吃分 +${spLine}`;sp2_color=sp2_type.includes('讓分')?'green':'blue'}
+        else{sp2_team=aEn;sp2_odds=spA||1.72;sp2_ev=calcEV(sp2_prob,sp2_odds);const awSp=-spLine;sp2_type=awSp<0?`讓分 ${awSp}`:`吃分 +${awSp}`;sp2_color=sp2_type.includes('讓分')?'green':'blue'}
+      }
+    }
+    if(sp2_ev>ml2_ev&&sp2_ev>-999){betTeamEn=sp2_team;betOdds=sp2_odds;betEV=sp2_ev;betType=sp2_type;betColor=sp2_color}
+    else{betTeamEn=ml2_team;betOdds=ml2_odds;betEV=ml2_ev>-999?ml2_ev:0;betType='不讓分';betColor='blue'}
     const recLevel=conf>=80&&betEV>=10?'rec':betEV>=3?'con':'obs';
     const st=new Date(game.commence_time);
     const timeStr=`${st.getMonth()+1}/${st.getDate()} ${String(st.getHours()).padStart(2,'0')}:${String(st.getMinutes()).padStart(2,'0')} 台灣時間`;
